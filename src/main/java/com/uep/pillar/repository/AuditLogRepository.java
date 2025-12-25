@@ -85,10 +85,10 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
      * Find recent audit logs.
      * 
      * @param pageable pagination info (use PageRequest.of(0, limit) to limit results)
-     * @return list of recent audit logs
+     * @return page of recent audit logs
      */
     @Query("SELECT a FROM AuditLog a ORDER BY a.createdAt DESC")
-    List<AuditLog> findRecent(Pageable pageable);
+    Page<AuditLog> findRecent(Pageable pageable);
 
     /**
      * Find login/logout audit logs for a user.

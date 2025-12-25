@@ -76,9 +76,9 @@ public interface MediaRepository extends JpaRepository<Media, Long> {
      * Find recent uploads.
      * 
      * @param pageable pagination info (use PageRequest.of(0, limit) to limit results)
-     * @return list of recent media
+     * @return page of recent media
      */
     @Query("SELECT m FROM Media m ORDER BY m.createdAt DESC")
-    List<Media> findRecentUploads(Pageable pageable);
+    Page<Media> findRecentUploads(Pageable pageable);
 }
 

@@ -119,10 +119,10 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * Find top N featured articles.
      * 
      * @param pageable pagination info (use PageRequest.of(0, limit) to limit results)
-     * @return list of featured articles
+     * @return page of featured articles
      */
     @Query("SELECT a FROM Article a WHERE a.featured = true AND a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
-    List<Article> findTopFeatured(Pageable pageable);
+    Page<Article> findTopFeatured(Pageable pageable);
 
     // ==================== FULL-TEXT SEARCH ====================
 
@@ -259,18 +259,18 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * Find recent published articles.
      * 
      * @param pageable pagination info (use PageRequest.of(0, limit) to limit results)
-     * @return list of recent articles
+     * @return page of recent articles
      */
     @Query("SELECT a FROM Article a WHERE a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
-    List<Article> findRecentPublished(Pageable pageable);
+    Page<Article> findRecentPublished(Pageable pageable);
 
     /**
      * Find most viewed published articles.
      * 
      * @param pageable pagination info (use PageRequest.of(0, limit) to limit results)
-     * @return list of popular articles
+     * @return page of popular articles
      */
     @Query("SELECT a FROM Article a WHERE a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.viewCount DESC")
-    List<Article> findMostViewed(Pageable pageable);
+    Page<Article> findMostViewed(Pageable pageable);
 }
 
