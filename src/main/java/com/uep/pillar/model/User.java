@@ -82,9 +82,8 @@ public class User {
 
     /**
      * All-args constructor for Builder pattern.
-     * Note: @AllArgsConstructor removed to prevent bypassing @Builder.Default values.
+     * Note: Custom all-args constructor is used instead of @AllArgsConstructor for compatibility with the @Builder pattern and JPA.
      */
-    @Builder
     public User(Long id, String email, String password, String firstName, String lastName,
                 String avatarUrl, String bio, Role role, LocalDateTime createdAt,
                 LocalDateTime updatedAt, LocalDateTime deletedAt) {

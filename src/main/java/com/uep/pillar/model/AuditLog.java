@@ -104,7 +104,15 @@ public class AuditLog {
 
     /**
      * IP address of the user (IPv4 or IPv6).
-     * Validation of IP address format should be performed at the service layer.
+     * <p>
+     * Only syntactically valid IP addresses should be stored here:
+     * <ul>
+     *     <li>IPv4 in dotted-decimal notation, for example {@code 203.0.113.42}</li>
+     *     <li>IPv6 in standard text representation, for example {@code 2001:db8::1},
+     *     validated according to RFC&nbsp;5952 (canonical textual representation)</li>
+     * </ul>
+     * Validation of IP address format must be performed at the service layer using
+     * a standards-compliant IP address parser/validator.
      */
     @Column(name = "ip_address", length = 45)
     private String ipAddress;

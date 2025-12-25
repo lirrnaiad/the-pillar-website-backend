@@ -35,9 +35,12 @@ import java.util.Set;
 @SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
-@NoArgsConstructor
 @Builder
 public class Article {
+
+    public Article() {
+        this.tags = new HashSet<>();
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -180,9 +183,8 @@ public class Article {
     /**
      * Builder constructor with defaults.
      */
-    @Builder
     public Article(Long id, String title, String slug, String content, String excerpt,
-                   ArticleStatus status, Boolean featured, Long viewCount,
+                   ArticleStatus status, boolean featured, Long viewCount,
                    User author, Category category, Media cover, PublicationIssue issue,
                    Set<Tag> tags, String metaTitle, String metaDescription, String ogImage,
                    LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime publishedAt,
@@ -193,7 +195,7 @@ public class Article {
         this.content = content;
         this.excerpt = excerpt;
         this.status = status != null ? status : ArticleStatus.DRAFT;
-        this.featured = featured != null ? featured : false;
+        this.featured = featured;
         this.viewCount = viewCount != null ? viewCount : 0L;
         this.author = author;
         this.category = category;
