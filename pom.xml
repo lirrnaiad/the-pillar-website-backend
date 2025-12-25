@@ -22,6 +22,7 @@
         <java.version>17</java.version>
         <graphql.spring.boot.starter.version>15.0.0</graphql.spring.boot.starter.version>
         <graphql.java.tools.version>13.0.2</graphql.java.tools.version>
+        <graphql.altair.version>11.1.0</graphql.altair.version>
     </properties>
     
     <dependencies>
@@ -68,8 +69,8 @@
         
         <dependency>
             <groupId>com.graphql-java-kickstart</groupId>
-            <artifactId>playground-spring-boot-starter</artifactId>
-            <version>${graphql.spring.boot.starter.version}</version>
+            <artifactId>altair-spring-boot-starter</artifactId>
+            <version>${graphql.altair.version}</version>
         </dependency>
         
         <!-- JWT for Authentication -->

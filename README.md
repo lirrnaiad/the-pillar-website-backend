@@ -120,11 +120,11 @@ mvn spring-boot:run
 
 Or run from your IDE by executing the `ThePillarApplication` class.
 
-### 4. Access GraphQL Playground
+### 4. Access GraphQL Altair
 
-Once running, access the GraphQL Playground at:
+Once running, access the GraphQL Altair IDE at:
 - **GraphQL Endpoint:** http://localhost:8080/graphql
-- **GraphQL Playground:** http://localhost:8080/playground
+- **GraphQL Altair:** http://localhost:8080/altair
 
 ## Development
 
@@ -143,7 +143,7 @@ mvn clean package -Pprod
 ## API Endpoints
 
 - **GraphQL:** `/graphql` (POST)
-- **GraphQL Playground:** `/playground` (GET) - Development only
+- **GraphQL Altair:** `/altair` (GET) - Development only
 
 ## Database Schema
 
