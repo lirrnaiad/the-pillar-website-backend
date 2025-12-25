@@ -2,24 +2,27 @@ package com.uep.pillar.model;
 
 import com.uep.pillar.model.enums.AuditAction;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Entity representing an audit log entry for tracking CMS actions.
  * Used for accountability and debugging.
  */
 @Entity
-@Table(name = "audit_logs")
-@Data
+@Table(name = "audit_logs", indexes = {
+    @Index(name = "idx_audit_logs_entity", columnList = "entity_type, entity_id"),
+    @Index(name = "idx_audit_logs_user", columnList = "user_id"),
+    @Index(name = "idx_audit_logs_created", columnList = "created_at")
+})
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -84,5 +87,22 @@ public class AuditLog {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
-}
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AuditLog auditLog = (AuditLog) o;
+        return id != null && Objects.equals(id, auditLog.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "AuditLog{id=" + id + ", action=" + action + ", entityType='" + entityType + "', entityId=" + entityId + "}";
+    }
+}

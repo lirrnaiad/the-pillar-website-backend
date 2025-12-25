@@ -1,21 +1,22 @@
 package com.uep.pillar.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 /**
  * Entity representing a revision/version of an article.
  * Used to track changes and enable rollback functionality.
  */
 @Entity
-@Table(name = "article_revisions")
-@Data
+@Table(name = "article_revisions", indexes = {
+    @Index(name = "idx_article_revisions_article", columnList = "article_id")
+})
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -63,5 +64,22 @@ public class ArticleRevision {
      */
     @Column(name = "revision_note", length = 255)
     private String revisionNote;
-}
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ArticleRevision that = (ArticleRevision) o;
+        return id != null && Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "ArticleRevision{id=" + id + ", revisedAt=" + revisedAt + "}";
+    }
+}

@@ -1,22 +1,24 @@
 package com.uep.pillar.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 /**
  * Entity representing a system user (admin, editor, writer).
  * Supports soft delete via deletedAt timestamp.
  */
 @Entity
-@Table(name = "users")
-@Data
+@Table(name = "users", indexes = {
+    @Index(name = "idx_users_email", columnList = "email"),
+    @Index(name = "idx_users_active", columnList = "deleted_at")
+})
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -29,6 +31,13 @@ public class User {
     @Column(nullable = false, unique = true, length = 255)
     private String email;
 
+    /**
+     * Stores the user's password hash.
+     * <p>
+     * IMPORTANT: This field must never contain a plain text password.
+     * Passwords must be hashed in the service/security layer before being
+     * assigned to this field (BCrypt recommended).
+     */
     @Column(nullable = false, length = 255)
     private String password;
 
@@ -44,7 +53,7 @@ public class User {
     @Column(columnDefinition = "TEXT")
     private String bio;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id")
     private Role role;
 
@@ -75,5 +84,22 @@ public class User {
     public String getFullName() {
         return firstName + " " + lastName;
     }
-}
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return id != null && Objects.equals(id, user.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "User{id=" + id + ", email='" + email + "'}";
+    }
+}

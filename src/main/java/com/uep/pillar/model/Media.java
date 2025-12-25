@@ -2,21 +2,23 @@ package com.uep.pillar.model;
 
 import com.uep.pillar.model.enums.MediaType;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 /**
  * Entity representing a media file stored in Cloudinary.
  * Stores metadata and URL, actual file is in cloud storage.
  */
 @Entity
-@Table(name = "media")
-@Data
+@Table(name = "media", indexes = {
+    @Index(name = "idx_media_uploaded_by", columnList = "uploaded_by"),
+    @Index(name = "idx_media_type", columnList = "type")
+})
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -77,5 +79,22 @@ public class Media {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
-}
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Media media = (Media) o;
+        return id != null && Objects.equals(id, media.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "Media{id=" + id + ", type=" + type + ", publicId='" + publicId + "'}";
+    }
+}

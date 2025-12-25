@@ -2,15 +2,13 @@ package com.uep.pillar.model;
 
 import com.uep.pillar.model.enums.ArticleStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -18,8 +16,16 @@ import java.util.Set;
  * Supports SEO metadata, full-text search, and soft deletes.
  */
 @Entity
-@Table(name = "articles")
-@Data
+@Table(name = "articles", indexes = {
+    @Index(name = "idx_articles_slug", columnList = "slug"),
+    @Index(name = "idx_articles_status", columnList = "status"),
+    @Index(name = "idx_articles_author", columnList = "author_id"),
+    @Index(name = "idx_articles_category", columnList = "category_id"),
+    @Index(name = "idx_articles_published", columnList = "published_at"),
+    @Index(name = "idx_articles_active", columnList = "deleted_at")
+})
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -54,20 +60,21 @@ public class Article {
      * Article workflow status.
      */
     @Enumerated(EnumType.STRING)
-    @Column(length = 50)
+    @Column(nullable = false, length = 50)
     @Builder.Default
     private ArticleStatus status = ArticleStatus.DRAFT;
 
     /**
      * Whether this article is featured on the homepage.
      */
+    @Column(nullable = false)
     @Builder.Default
     private Boolean featured = false;
 
     /**
      * Number of times the article has been viewed.
      */
-    @Column(name = "view_count")
+    @Column(name = "view_count", nullable = false)
     @Builder.Default
     private Long viewCount = 0L;
 
@@ -175,6 +182,9 @@ public class Article {
      * Add a tag to the article.
      */
     public void addTag(Tag tag) {
+        if (tags == null) {
+            tags = new HashSet<>();
+        }
         tags.add(tag);
     }
 
@@ -182,7 +192,26 @@ public class Article {
      * Remove a tag from the article.
      */
     public void removeTag(Tag tag) {
-        tags.remove(tag);
+        if (tags != null) {
+            tags.remove(tag);
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Article article = (Article) o;
+        return id != null && Objects.equals(id, article.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "Article{id=" + id + ", slug='" + slug + "', status=" + status + "}";
     }
 }
-
