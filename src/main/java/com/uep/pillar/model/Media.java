@@ -42,8 +42,10 @@ public class Media {
 
     /**
      * Alt text for accessibility and SEO.
+     * Uses TEXT to support longer, descriptive alt text for complex images
+     * as recommended by WCAG accessibility guidelines.
      */
-    @Column(name = "alt_text", length = 255)
+    @Column(name = "alt_text", columnDefinition = "TEXT")
     private String altText;
 
     /**

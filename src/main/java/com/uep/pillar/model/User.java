@@ -25,7 +25,6 @@ import java.util.Objects;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class User {
 
@@ -44,6 +43,8 @@ public class User {
      * assigned to this field (BCrypt recommended).
      * <p>
      * WARNING: Never include this field in toString() or expose via API responses.
+     * The @Setter is kept for flexibility, but password hashing MUST be done
+     * at the service layer before calling setPassword().
      */
     @Column(nullable = false, length = 255)
     private String password;
@@ -80,6 +81,27 @@ public class User {
     private LocalDateTime deletedAt;
 
     /**
+     * All-args constructor for Builder pattern.
+     * Note: @AllArgsConstructor removed to prevent bypassing @Builder.Default values.
+     */
+    @Builder
+    public User(Long id, String email, String password, String firstName, String lastName,
+                String avatarUrl, String bio, Role role, LocalDateTime createdAt,
+                LocalDateTime updatedAt, LocalDateTime deletedAt) {
+        this.id = id;
+        this.email = email;
+        this.password = password;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.avatarUrl = avatarUrl;
+        this.bio = bio;
+        this.role = role;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.deletedAt = deletedAt;
+    }
+
+    /**
      * Check if the user is soft-deleted.
      */
     public boolean isDeleted() {
@@ -88,8 +110,20 @@ public class User {
 
     /**
      * Get the user's full name.
+     * <p>
+     * This method is null-safe: if one name part is null, returns the other;
+     * if both are null, returns an empty string.
      */
     public String getFullName() {
+        if (firstName == null && lastName == null) {
+            return "";
+        }
+        if (firstName == null) {
+            return lastName;
+        }
+        if (lastName == null) {
+            return firstName;
+        }
         return firstName + " " + lastName;
     }
 

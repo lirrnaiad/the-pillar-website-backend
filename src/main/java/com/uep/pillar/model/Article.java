@@ -18,6 +18,10 @@ import java.util.Set;
  * 
  * Note: Queries automatically exclude soft-deleted articles via @SQLRestriction.
  * To include deleted articles, use native queries or remove the filter.
+ * 
+ * Database optimization: Consider adding a partial index for better soft-delete
+ * query performance: CREATE INDEX ... WHERE deleted_at IS NULL
+ * (must be done via migration, not JPA annotations)
  */
 @Entity
 @Table(name = "articles", indexes = {
@@ -32,7 +36,6 @@ import java.util.Set;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class Article {
 
@@ -66,26 +69,23 @@ public class Article {
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    @Builder.Default
-    private ArticleStatus status = ArticleStatus.DRAFT;
+    private ArticleStatus status;
 
     /**
      * Whether this article is featured on the homepage.
      */
     @Column(nullable = false)
-    @Builder.Default
-    private Boolean featured = false;
+    private boolean featured;
 
     /**
      * Number of times the article has been viewed.
+     * Uses primitive long to enforce non-null at compile time.
      * 
      * Note: For high-traffic scenarios, consider implementing a counter caching
      * strategy (Redis/in-memory buffer) to avoid database contention.
-     * This is acceptable for MVP but should be optimized at scale.
      */
     @Column(name = "view_count", nullable = false)
-    @Builder.Default
-    private Long viewCount = 0L;
+    private long viewCount;
 
     // ==================== RELATIONSHIPS ====================
 
@@ -123,6 +123,7 @@ public class Article {
      * Note: Unidirectional relationship is intentional. Tags are managed 
      * independently and don't need back-reference to articles.
      * No cascade - tags should be created/deleted separately.
+     * Join table entries are cleaned up via ON DELETE CASCADE in the database.
      */
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -130,13 +131,13 @@ public class Article {
         joinColumns = @JoinColumn(name = "article_id"),
         inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
-    @Builder.Default
-    private Set<Tag> tags = new HashSet<>();
+    private Set<Tag> tags;
 
     // ==================== SEO METADATA ====================
 
     /**
      * Custom SEO title (max 60 chars).
+     * 60 characters is the standard Google SERP title limit.
      */
     @Column(name = "meta_title", length = 60)
     private String metaTitle;
@@ -176,6 +177,38 @@ public class Article {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    /**
+     * Builder constructor with defaults.
+     */
+    @Builder
+    public Article(Long id, String title, String slug, String content, String excerpt,
+                   ArticleStatus status, Boolean featured, Long viewCount,
+                   User author, Category category, Media cover, PublicationIssue issue,
+                   Set<Tag> tags, String metaTitle, String metaDescription, String ogImage,
+                   LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime publishedAt,
+                   LocalDateTime deletedAt) {
+        this.id = id;
+        this.title = title;
+        this.slug = slug;
+        this.content = content;
+        this.excerpt = excerpt;
+        this.status = status != null ? status : ArticleStatus.DRAFT;
+        this.featured = featured != null ? featured : false;
+        this.viewCount = viewCount != null ? viewCount : 0L;
+        this.author = author;
+        this.category = category;
+        this.cover = cover;
+        this.issue = issue;
+        this.tags = tags != null ? tags : new HashSet<>();
+        this.metaTitle = metaTitle;
+        this.metaDescription = metaDescription;
+        this.ogImage = ogImage;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.publishedAt = publishedAt;
+        this.deletedAt = deletedAt;
+    }
+
     // ==================== HELPER METHODS ====================
 
     /**
@@ -196,9 +229,6 @@ public class Article {
      * Add a tag to the article.
      */
     public void addTag(Tag tag) {
-        if (tags == null) {
-            tags = new HashSet<>();
-        }
         tags.add(tag);
     }
 
@@ -206,20 +236,7 @@ public class Article {
      * Remove a tag from the article.
      */
     public void removeTag(Tag tag) {
-        if (tags != null) {
-            tags.remove(tag);
-        }
-    }
-
-    /**
-     * Ensure tags is never null (defensive initialization).
-     */
-    @PrePersist
-    @PreUpdate
-    private void ensureTagsNotNull() {
-        if (tags == null) {
-            tags = new HashSet<>();
-        }
+        tags.remove(tag);
     }
 
     @Override

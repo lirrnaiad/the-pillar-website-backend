@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -66,18 +67,26 @@ public class Role {
      * @param action The action (e.g., "create", "read", "update", "delete")
      * @return true if permission granted
      */
-    @SuppressWarnings("unchecked")
     public boolean hasPermission(String resource, String action) {
         if (permissions == null) return false;
         
         // Admin has all permissions
-        if (Boolean.TRUE.equals(permissions.get("all"))) {
+        Object allPerm = permissions.get("all");
+        if (allPerm instanceof Boolean && (Boolean) allPerm) {
             return true;
         }
         
         Object resourcePerms = permissions.get(resource);
-        if (resourcePerms instanceof java.util.List) {
-            return ((java.util.List<String>) resourcePerms).contains(action);
+        if (resourcePerms instanceof List<?> permList) {
+            try {
+                return permList.stream()
+                    .filter(p -> p instanceof String)
+                    .map(p -> (String) p)
+                    .anyMatch(p -> p.equals(action));
+            } catch (Exception e) {
+                // Malformed permission data - log and return false
+                return false;
+            }
         }
         return false;
     }

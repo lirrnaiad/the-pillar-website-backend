@@ -104,6 +104,7 @@ public class AuditLog {
 
     /**
      * IP address of the user (IPv4 or IPv6).
+     * Validation of IP address format should be performed at the service layer.
      */
     @Column(name = "ip_address", length = 45)
     private String ipAddress;

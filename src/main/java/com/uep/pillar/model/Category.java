@@ -36,7 +36,11 @@ public class Category {
     private String description;
 
     /**
-     * Hex color code for UI display (e.g., #E53935)
+     * Hex color code for UI display (e.g., #E53935).
+     * Format: #RRGGBB (7 characters including #).
+     * 
+     * Validation of hex color format should be performed at the service layer
+     * using a regex pattern like: ^#[0-9A-Fa-f]{6}$
      */
     @Column(length = 7)
     private String color;
