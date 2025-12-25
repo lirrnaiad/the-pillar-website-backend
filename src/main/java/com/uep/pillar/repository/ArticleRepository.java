@@ -59,7 +59,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info
      * @return paginated list of published articles
      */
-    @Query("SELECT a FROM Article a WHERE a.status = 'PUBLISHED' ORDER BY a.publishedAt DESC")
+    @Query("SELECT a FROM Article a WHERE a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
     Page<Article> findAllPublished(Pageable pageable);
 
     // ==================== FIND BY CATEGORY ====================
@@ -80,7 +80,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info
      * @return paginated list of published articles in that category
      */
-    @Query("SELECT a FROM Article a WHERE a.category.slug = :categorySlug AND a.status = 'PUBLISHED' ORDER BY a.publishedAt DESC")
+    @Query("SELECT a FROM Article a WHERE a.category.slug = :categorySlug AND a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
     Page<Article> findPublishedByCategorySlug(@Param("categorySlug") String categorySlug, Pageable pageable);
 
     // ==================== FIND BY AUTHOR ====================
@@ -101,7 +101,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info
      * @return paginated list of published articles
      */
-    @Query("SELECT a FROM Article a WHERE a.author.id = :authorId AND a.status = 'PUBLISHED' ORDER BY a.publishedAt DESC")
+    @Query("SELECT a FROM Article a WHERE a.author.id = :authorId AND a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
     Page<Article> findPublishedByAuthorId(@Param("authorId") Long authorId, Pageable pageable);
 
     // ==================== FEATURED ARTICLES ====================
@@ -112,17 +112,17 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info
      * @return paginated list of featured articles
      */
-    @Query("SELECT a FROM Article a WHERE a.featured = true AND a.status = 'PUBLISHED' ORDER BY a.publishedAt DESC")
+    @Query("SELECT a FROM Article a WHERE a.featured = true AND a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
     Page<Article> findFeatured(Pageable pageable);
 
     /**
      * Find top N featured articles.
      * 
-     * @param limit maximum number of results
+     * @param pageable pagination info (use PageRequest.of(0, limit) to limit results)
      * @return list of featured articles
      */
-    @Query("SELECT a FROM Article a WHERE a.featured = true AND a.status = 'PUBLISHED' ORDER BY a.publishedAt DESC LIMIT :limit")
-    List<Article> findTopFeatured(@Param("limit") int limit);
+    @Query("SELECT a FROM Article a WHERE a.featured = true AND a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
+    List<Article> findTopFeatured(Pageable pageable);
 
     // ==================== FULL-TEXT SEARCH ====================
 
@@ -191,7 +191,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info
      * @return paginated list of articles with that tag
      */
-    @Query("SELECT a FROM Article a JOIN a.tags t WHERE t.slug = :tagSlug AND a.status = 'PUBLISHED' ORDER BY a.publishedAt DESC")
+    @Query("SELECT a FROM Article a JOIN a.tags t WHERE t.slug = :tagSlug AND a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
     Page<Article> findPublishedByTagSlug(@Param("tagSlug") String tagSlug, Pageable pageable);
 
     // ==================== SOFT DELETE & RESTORE ====================
@@ -258,19 +258,19 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
     /**
      * Find recent published articles.
      * 
-     * @param limit maximum results
+     * @param pageable pagination info (use PageRequest.of(0, limit) to limit results)
      * @return list of recent articles
      */
-    @Query("SELECT a FROM Article a WHERE a.status = 'PUBLISHED' ORDER BY a.publishedAt DESC LIMIT :limit")
-    List<Article> findRecentPublished(@Param("limit") int limit);
+    @Query("SELECT a FROM Article a WHERE a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
+    List<Article> findRecentPublished(Pageable pageable);
 
     /**
      * Find most viewed published articles.
      * 
-     * @param limit maximum results
+     * @param pageable pagination info (use PageRequest.of(0, limit) to limit results)
      * @return list of popular articles
      */
-    @Query("SELECT a FROM Article a WHERE a.status = 'PUBLISHED' ORDER BY a.viewCount DESC LIMIT :limit")
-    List<Article> findMostViewed(@Param("limit") int limit);
+    @Query("SELECT a FROM Article a WHERE a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.viewCount DESC")
+    List<Article> findMostViewed(Pageable pageable);
 }
 

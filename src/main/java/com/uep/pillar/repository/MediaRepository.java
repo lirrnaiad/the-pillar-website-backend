@@ -60,7 +60,7 @@ public interface MediaRepository extends JpaRepository<Media, Long> {
      * @param pageable pagination info
      * @return paginated list of images
      */
-    @Query("SELECT m FROM Media m WHERE m.type = 'IMAGE' ORDER BY m.createdAt DESC")
+    @Query("SELECT m FROM Media m WHERE m.type = com.uep.pillar.model.enums.MediaType.IMAGE ORDER BY m.createdAt DESC")
     Page<Media> findAllImages(Pageable pageable);
 
     /**
@@ -75,10 +75,10 @@ public interface MediaRepository extends JpaRepository<Media, Long> {
     /**
      * Find recent uploads.
      * 
-     * @param limit maximum number of results
+     * @param pageable pagination info (use PageRequest.of(0, limit) to limit results)
      * @return list of recent media
      */
-    @Query("SELECT m FROM Media m ORDER BY m.createdAt DESC LIMIT :limit")
-    List<Media> findRecentUploads(@Param("limit") int limit);
+    @Query("SELECT m FROM Media m ORDER BY m.createdAt DESC")
+    List<Media> findRecentUploads(Pageable pageable);
 }
 

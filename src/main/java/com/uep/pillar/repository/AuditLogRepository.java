@@ -5,6 +5,7 @@ import com.uep.pillar.model.enums.AuditAction;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -83,11 +84,11 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
     /**
      * Find recent audit logs.
      * 
-     * @param limit maximum results
+     * @param pageable pagination info (use PageRequest.of(0, limit) to limit results)
      * @return list of recent audit logs
      */
-    @Query("SELECT a FROM AuditLog a ORDER BY a.createdAt DESC LIMIT :limit")
-    List<AuditLog> findRecent(@Param("limit") int limit);
+    @Query("SELECT a FROM AuditLog a ORDER BY a.createdAt DESC")
+    List<AuditLog> findRecent(Pageable pageable);
 
     /**
      * Find login/logout audit logs for a user.
@@ -96,7 +97,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
      * @param pageable pagination info
      * @return paginated list of auth-related audit logs
      */
-    @Query("SELECT a FROM AuditLog a WHERE a.user.id = :userId AND a.action IN ('LOGIN', 'LOGOUT') ORDER BY a.createdAt DESC")
+    @Query("SELECT a FROM AuditLog a WHERE a.user.id = :userId AND a.action IN (com.uep.pillar.model.enums.AuditAction.LOGIN, com.uep.pillar.model.enums.AuditAction.LOGOUT) ORDER BY a.createdAt DESC")
     Page<AuditLog> findAuthLogsByUserId(@Param("userId") Long userId, Pageable pageable);
 
     /**
@@ -121,6 +122,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
      * 
      * @param cutoffDate delete logs created before this date
      */
+    @Modifying
     void deleteByCreatedAtBefore(LocalDateTime cutoffDate);
 }
 
