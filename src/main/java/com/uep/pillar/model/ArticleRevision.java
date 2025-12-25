@@ -10,6 +10,9 @@ import java.util.Objects;
 /**
  * Entity representing a revision/version of an article.
  * Used to track changes and enable rollback functionality.
+ * 
+ * Note: Revisions are automatically deleted when the parent article is deleted
+ * via ON DELETE CASCADE in the database foreign key constraint.
  */
 @Entity
 @Table(name = "article_revisions", indexes = {
@@ -28,6 +31,9 @@ public class ArticleRevision {
 
     /**
      * The article this revision belongs to.
+     * 
+     * Note: When an article is deleted, all its revisions are automatically
+     * deleted via the database's ON DELETE CASCADE constraint.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "article_id", nullable = false)

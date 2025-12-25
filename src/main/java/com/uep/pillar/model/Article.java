@@ -4,6 +4,7 @@ import com.uep.pillar.model.enums.ArticleStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
@@ -14,6 +15,9 @@ import java.util.Set;
 /**
  * Entity representing an article/post in the publication.
  * Supports SEO metadata, full-text search, and soft deletes.
+ * 
+ * Note: Queries automatically exclude soft-deleted articles via @SQLRestriction.
+ * To include deleted articles, use native queries or remove the filter.
  */
 @Entity
 @Table(name = "articles", indexes = {
@@ -22,8 +26,9 @@ import java.util.Set;
     @Index(name = "idx_articles_author", columnList = "author_id"),
     @Index(name = "idx_articles_category", columnList = "category_id"),
     @Index(name = "idx_articles_published", columnList = "published_at"),
-    @Index(name = "idx_articles_active", columnList = "deleted_at")
+    @Index(name = "idx_articles_deleted_at", columnList = "deleted_at")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -73,6 +78,10 @@ public class Article {
 
     /**
      * Number of times the article has been viewed.
+     * 
+     * Note: For high-traffic scenarios, consider implementing a counter caching
+     * strategy (Redis/in-memory buffer) to avoid database contention.
+     * This is acceptable for MVP but should be optimized at scale.
      */
     @Column(name = "view_count", nullable = false)
     @Builder.Default
@@ -110,6 +119,10 @@ public class Article {
 
     /**
      * Tags associated with this article.
+     * 
+     * Note: Unidirectional relationship is intentional. Tags are managed 
+     * independently and don't need back-reference to articles.
+     * No cascade - tags should be created/deleted separately.
      */
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -158,6 +171,7 @@ public class Article {
 
     /**
      * Soft delete timestamp. If not null, the article is considered deleted.
+     * Filtered automatically by @SQLRestriction.
      */
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
@@ -194,6 +208,17 @@ public class Article {
     public void removeTag(Tag tag) {
         if (tags != null) {
             tags.remove(tag);
+        }
+    }
+
+    /**
+     * Ensure tags is never null (defensive initialization).
+     */
+    @PrePersist
+    @PreUpdate
+    private void ensureTagsNotNull() {
+        if (tags == null) {
+            tags = new HashSet<>();
         }
     }
 

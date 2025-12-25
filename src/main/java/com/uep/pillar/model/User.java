@@ -3,6 +3,7 @@ package com.uep.pillar.model;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
@@ -11,12 +12,16 @@ import java.util.Objects;
 /**
  * Entity representing a system user (admin, editor, writer).
  * Supports soft delete via deletedAt timestamp.
+ * 
+ * Note: Queries automatically exclude soft-deleted users via @SQLRestriction.
+ * To include deleted users, use native queries or remove the filter.
  */
 @Entity
 @Table(name = "users", indexes = {
     @Index(name = "idx_users_email", columnList = "email"),
-    @Index(name = "idx_users_active", columnList = "deleted_at")
+    @Index(name = "idx_users_deleted_at", columnList = "deleted_at")
 })
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -37,6 +42,8 @@ public class User {
      * IMPORTANT: This field must never contain a plain text password.
      * Passwords must be hashed in the service/security layer before being
      * assigned to this field (BCrypt recommended).
+     * <p>
+     * WARNING: Never include this field in toString() or expose via API responses.
      */
     @Column(nullable = false, length = 255)
     private String password;
@@ -67,6 +74,7 @@ public class User {
 
     /**
      * Soft delete timestamp. If not null, the user is considered deleted.
+     * Filtered automatically by @SQLRestriction.
      */
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
@@ -98,6 +106,9 @@ public class User {
         return getClass().hashCode();
     }
 
+    /**
+     * Note: Intentionally excludes password field for security.
+     */
     @Override
     public String toString() {
         return "User{id=" + id + ", email='" + email + "'}";

@@ -13,6 +13,20 @@ import java.util.Objects;
  * Permissions are stored as JSONB in PostgreSQL.
  * 
  * Note: Uses Integer for ID as roles are a small lookup table (SERIAL in PostgreSQL).
+ * 
+ * <h3>Permissions Structure (JSONB)</h3>
+ * <pre>
+ * {
+ *   "all": true,  // Admin: full access
+ *   // OR specific permissions:
+ *   "articles": ["create", "read", "update", "delete", "publish"],
+ *   "media": ["create", "read", "delete"],
+ *   "users": ["read"]
+ * }
+ * </pre>
+ * 
+ * The flexible Map&lt;String, Object&gt; allows for evolving permission structures
+ * without schema changes. Type safety is enforced at the service layer.
  */
 @Entity
 @Table(name = "roles")
@@ -32,11 +46,41 @@ public class Role {
 
     /**
      * Permissions stored as JSON object.
-     * Example: {"articles": ["create", "read", "update"], "media": ["create", "read"]}
+     * 
+     * Expected structure:
+     * - "all": Boolean - if true, grants all permissions (admin)
+     * - "articles": List&lt;String&gt; - article permissions
+     * - "media": List&lt;String&gt; - media permissions
+     * - "users": List&lt;String&gt; - user management permissions
+     * 
+     * Type safety is enforced at the service layer when checking permissions.
      */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> permissions;
+
+    /**
+     * Check if this role has a specific permission.
+     * 
+     * @param resource The resource (e.g., "articles", "media")
+     * @param action The action (e.g., "create", "read", "update", "delete")
+     * @return true if permission granted
+     */
+    @SuppressWarnings("unchecked")
+    public boolean hasPermission(String resource, String action) {
+        if (permissions == null) return false;
+        
+        // Admin has all permissions
+        if (Boolean.TRUE.equals(permissions.get("all"))) {
+            return true;
+        }
+        
+        Object resourcePerms = permissions.get(resource);
+        if (resourcePerms instanceof java.util.List) {
+            return ((java.util.List<String>) resourcePerms).contains(action);
+        }
+        return false;
+    }
 
     @Override
     public boolean equals(Object o) {

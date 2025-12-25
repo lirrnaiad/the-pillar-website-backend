@@ -14,6 +14,29 @@ import java.util.Objects;
 /**
  * Entity representing an audit log entry for tracking CMS actions.
  * Used for accountability and debugging.
+ * 
+ * <h3>JSONB Fields (oldValue, newValue)</h3>
+ * These fields use Map&lt;String, Object&gt; to accommodate different entity types:
+ * <pre>
+ * // Article audit example:
+ * {
+ *   "id": 123,
+ *   "title": "Article Title",
+ *   "status": "PUBLISHED",
+ *   "authorId": 1
+ * }
+ * 
+ * // User audit example:
+ * {
+ *   "id": 1,
+ *   "email": "user@example.com",
+ *   "firstName": "John",
+ *   "roleId": 2
+ * }
+ * </pre>
+ * 
+ * The flexible structure allows auditing any entity type without schema changes.
+ * Sensitive fields (like passwords) should never be included in audit logs.
  */
 @Entity
 @Table(name = "audit_logs", indexes = {
@@ -34,6 +57,7 @@ public class AuditLog {
 
     /**
      * User who performed the action.
+     * May be null for system-generated actions.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -47,7 +71,7 @@ public class AuditLog {
     private AuditAction action;
 
     /**
-     * Type of entity affected (ARTICLE, MEDIA, USER, etc.).
+     * Type of entity affected (ARTICLE, MEDIA, USER, CATEGORY, TAG, etc.).
      */
     @Column(name = "entity_type", nullable = false, length = 50)
     private String entityType;
@@ -60,6 +84,9 @@ public class AuditLog {
 
     /**
      * Previous state of the entity (JSON).
+     * 
+     * Structure varies by entity type. Never include sensitive data like passwords.
+     * @see AuditLog class documentation for structure examples.
      */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "old_value", columnDefinition = "jsonb")
@@ -67,13 +94,16 @@ public class AuditLog {
 
     /**
      * New state of the entity (JSON).
+     * 
+     * Structure varies by entity type. Never include sensitive data like passwords.
+     * @see AuditLog class documentation for structure examples.
      */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "new_value", columnDefinition = "jsonb")
     private Map<String, Object> newValue;
 
     /**
-     * IP address of the user.
+     * IP address of the user (IPv4 or IPv6).
      */
     @Column(name = "ip_address", length = 45)
     private String ipAddress;
