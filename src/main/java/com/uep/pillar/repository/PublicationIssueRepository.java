@@ -53,9 +53,10 @@ public interface PublicationIssueRepository extends JpaRepository<PublicationIss
     /**
      * Find the most recent published issue.
      * 
-     * @return the latest issue if any
+     * @param pageable pagination info (use PageRequest.of(0, 1) to get the latest issue)
+     * @return page containing the latest issue if any
      */
-    @Query("SELECT pi FROM PublicationIssue pi WHERE pi.publishedAt IS NOT NULL ORDER BY pi.publishedAt DESC LIMIT 1")
-    Optional<PublicationIssue> findLatestPublished();
+    @Query("SELECT pi FROM PublicationIssue pi WHERE pi.publishedAt IS NOT NULL ORDER BY pi.publishedAt DESC")
+    Page<PublicationIssue> findLatestPublished(Pageable pageable);
 }
 

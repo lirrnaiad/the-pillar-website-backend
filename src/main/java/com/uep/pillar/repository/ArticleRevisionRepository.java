@@ -4,6 +4,7 @@ import com.uep.pillar.model.ArticleRevision;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -39,10 +40,11 @@ public interface ArticleRevisionRepository extends JpaRepository<ArticleRevision
      * Find the most recent revision for an article.
      * 
      * @param articleId the article ID
-     * @return the latest revision if any
+     * @param pageable pagination info (use PageRequest.of(0, 1) to get the latest)
+     * @return page containing the latest revision if any
      */
-    @Query("SELECT r FROM ArticleRevision r WHERE r.article.id = :articleId ORDER BY r.revisedAt DESC LIMIT 1")
-    Optional<ArticleRevision> findLatestByArticleId(@Param("articleId") Long articleId);
+    @Query("SELECT r FROM ArticleRevision r WHERE r.article.id = :articleId ORDER BY r.revisedAt DESC")
+    Page<ArticleRevision> findLatestByArticleId(@Param("articleId") Long articleId, Pageable pageable);
 
     /**
      * Find revisions made by a specific user.
@@ -68,6 +70,7 @@ public interface ArticleRevisionRepository extends JpaRepository<ArticleRevision
      * 
      * @param articleId the article ID
      */
+    @Modifying
     void deleteByArticleId(Long articleId);
 }
 
