@@ -2,6 +2,7 @@ package com.uep.pillar.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -36,6 +37,7 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Slf4j
 public class Role {
 
     @Id
@@ -85,6 +87,8 @@ public class Role {
                     .anyMatch(p -> p.equals(action));
             } catch (Exception e) {
                 // Malformed permission data - log and return false
+                log.warn("Failed to check permission for resource '{}' and action '{}' in role '{}': {}", 
+                         resource, action, name, e.getMessage());
                 return false;
             }
         }
