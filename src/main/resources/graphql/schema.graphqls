@@ -151,9 +151,9 @@ type ArticleRevision {
     article: Article!
     title: String!
     content: String!
-    changedBy: User!
-    changeReason: String
-    createdAt: DateTime!
+    revisedBy: User
+    revisionNote: String
+    revisedAt: DateTime!
 }
 
 """
@@ -164,8 +164,11 @@ type AuditLog {
     action: AuditAction!
     entityType: String!
     entityId: ID!
-    changedBy: User!
-    details: JSON
+    user: User
+    oldValue: JSON
+    newValue: JSON
+    ipAddress: String
+    userAgent: String
     createdAt: DateTime!
 }
 
@@ -203,7 +206,7 @@ Input for creating an article.
 """
 input CreateArticleInput {
     title: String!
-    slug: String!
+    slug: String
     content: String!
     excerpt: String
     categoryId: ID
@@ -492,6 +495,12 @@ type Query {
     """
     publicationIssueBySlug(slug: String!): PublicationIssue
 
+    # Article revision queries
+    """
+    Get revision history for an article.
+    """
+    articleRevisions(articleId: ID!): [ArticleRevision!]!
+
     # Audit queries
     """
     Get audit logs.
@@ -520,7 +529,7 @@ type ArticleStatistics {
     totalArticles: Int!
     publishedArticles: Int!
     draftArticles: Int!
-    viewsCount: Long!
+    totalViews: Long!
     avgViewsPerArticle: Float!
 }
 
@@ -562,6 +571,11 @@ type Mutation {
     Archive an article.
     """
     archiveArticle(id: ID!): Article!
+
+    """
+    Reject an article with feedback (sets status to REJECTED).
+    """
+    rejectArticle(id: ID!, reason: String!): Article!
 
     """
     Restore a soft-deleted article.
