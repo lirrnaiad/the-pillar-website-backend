@@ -206,10 +206,10 @@ input CreateArticleInput {
     slug: String!
     content: String!
     excerpt: String
-    categoryId: Int
-    coverId: Long
-    issueId: Long
-    tagIds: [Int!]
+    categoryId: ID
+    coverId: ID
+    issueId: ID
+    tagIds: [ID!]
     metaTitle: String
     metaDescription: String
     ogImage: String
@@ -227,10 +227,10 @@ input UpdateArticleInput {
     excerpt: String
     status: ArticleStatus
     featured: Boolean
-    categoryId: Int
-    coverId: Long
-    issueId: Long
-    tagIds: [Int!]
+    categoryId: ID
+    coverId: ID
+    issueId: ID
+    tagIds: [ID!]
     metaTitle: String
     metaDescription: String
     ogImage: String
@@ -238,6 +238,9 @@ input UpdateArticleInput {
 
 """
 Input for creating a user.
+
+Note: Password is transmitted in plain text and must be sent over HTTPS.
+It will be securely hashed before storage.
 """
 input CreateUserInput {
     email: String!
@@ -246,7 +249,7 @@ input CreateUserInput {
     lastName: String!
     avatarUrl: String
     bio: String
-    roleId: Int
+    roleId: ID
 }
 
 """
@@ -259,7 +262,7 @@ input UpdateUserInput {
     lastName: String
     avatarUrl: String
     bio: String
-    roleId: Int
+    roleId: ID
 }
 
 """
@@ -341,9 +344,9 @@ Input for article pagination and filtering.
 """
 input ArticleFilter {
     status: ArticleStatus
-    categoryId: Int
-    tagIds: [Int!]
-    issueId: Long
+    categoryId: ID
+    tagIds: [ID!]
+    issueId: ID
     authorId: ID
     featured: Boolean
     search: String
@@ -353,8 +356,19 @@ input ArticleFilter {
 Input for article sorting.
 """
 input ArticleSort {
-    field: String!
+    field: ArticleSortField!
     direction: SortDirection!
+}
+
+"""
+Article sort field enumeration.
+"""
+enum ArticleSortField {
+    TITLE
+    CREATED_AT
+    UPDATED_AT
+    PUBLISHED_AT
+    VIEW_COUNT
 }
 
 """
@@ -455,7 +469,7 @@ type Query {
     """
     Get all media files.
     """
-    media(first: Int = 10, after: String): [Media!]!
+    media: [Media!]!
 
     """
     Get a single media file by ID.
@@ -485,8 +499,6 @@ type Query {
     auditLogs(
         entityType: String
         entityId: ID
-        first: Int = 10
-        after: String
     ): [AuditLog!]!
 
     # Statistics queries
@@ -569,12 +581,12 @@ type Mutation {
     """
     Add tag to article.
     """
-    addArticleTag(articleId: ID!, tagId: Int!): Article!
+    addArticleTag(articleId: ID!, tagId: ID!): Article!
 
     """
     Remove tag from article.
     """
-    removeArticleTag(articleId: ID!, tagId: Int!): Article!
+    removeArticleTag(articleId: ID!, tagId: ID!): Article!
 
     # User mutations
     """
@@ -594,6 +606,8 @@ type Mutation {
 
     """
     Change user password.
+
+    Requires: `newPassword` must be at least 8 characters long and include uppercase, lowercase, and numeric characters.
     """
     changePassword(id: ID!, oldPassword: String!, newPassword: String!): Boolean!
 
