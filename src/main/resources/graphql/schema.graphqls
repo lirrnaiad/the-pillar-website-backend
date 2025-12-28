@@ -421,6 +421,15 @@ type Query {
     featuredArticles(first: Int = 5): [Article!]!
 
     """
+    Get articles by category slug with pagination.
+    """
+    articlesByCategory(
+        categorySlug: String!
+        first: Int = 10
+        after: String
+    ): ArticlesConnection!
+
+    """
     Get recent published articles.
     """
     recentArticles(first: Int = 10): [Article!]!
