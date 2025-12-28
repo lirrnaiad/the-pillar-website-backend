@@ -47,7 +47,13 @@ public class MediaUploadController {
     ) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
-            throw new UnauthorizedException("Authentication required");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ErrorResponse.builder()
+                            .error("Unauthorized")
+                            .message("Authentication required")
+                            .timestamp(LocalDateTime.now())
+                            .status(HttpStatus.UNAUTHORIZED.value())
+                            .build());
         }
         String email = auth.getName();
         User uploader = userService.findByEmail(email)

@@ -88,7 +88,6 @@ public class CloudStorageService {
      */
     public void deleteFile(String publicId) {
         if (publicId == null || publicId.isBlank()) return;
-        boolean foundAndDeleted = false;
         boolean allNotFound = true;
         
         for (String resourceType : List.of("image", "video", "raw")) {
@@ -98,7 +97,6 @@ public class CloudStorageService {
                 Map<?, ?> res = cloudinary.uploader().destroy(publicId, options);
                 Object result = res.get("result");
                 if (Objects.equals(result, "ok")) {
-                    foundAndDeleted = true;
                     return;
                 }
                 // If not found, try next resource type
