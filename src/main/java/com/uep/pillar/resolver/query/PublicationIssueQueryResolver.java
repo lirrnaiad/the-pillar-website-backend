@@ -3,8 +3,8 @@ package com.uep.pillar.resolver.query;
 import com.uep.pillar.model.Article;
 import com.uep.pillar.model.PublicationIssue;
 import com.uep.pillar.repository.ArticleRepository;
-import com.uep.pillar.repository.PublicationIssueRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.uep.pillar.service.PublicationIssueService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -13,26 +13,19 @@ import java.util.List;
  * GraphQL Query Resolver for PublicationIssue-related queries.
  */
 @Component
+@RequiredArgsConstructor
 public class PublicationIssueQueryResolver {
 
-    private final PublicationIssueRepository publicationIssueRepository;
+    private final PublicationIssueService publicationIssueService;
     private final ArticleRepository articleRepository;
 
-    @Autowired
-    public PublicationIssueQueryResolver(
-            PublicationIssueRepository publicationIssueRepository,
-            ArticleRepository articleRepository) {
-        this.publicationIssueRepository = publicationIssueRepository;
-        this.articleRepository = articleRepository;
-    }
-
     /**
-     * Get all publication issues.
+     * Get all published publication issues.
      * 
-     * @return list of all publication issues
+     * @return list of published publication issues
      */
     public List<PublicationIssue> publicationIssues() {
-        return publicationIssueRepository.findAll();
+        return publicationIssueService.listPublished();
     }
 
     /**
@@ -44,8 +37,8 @@ public class PublicationIssueQueryResolver {
     public PublicationIssue publicationIssue(String id) {
         try {
             Long issueId = Long.parseLong(id);
-            return publicationIssueRepository.findById(issueId).orElse(null);
-        } catch (NumberFormatException e) {
+            return publicationIssueService.findById(issueId);
+        } catch (NumberFormatException | com.uep.pillar.exception.ResourceNotFoundException e) {
             return null;
         }
     }
@@ -57,7 +50,7 @@ public class PublicationIssueQueryResolver {
      * @return the publication issue if found, null otherwise
      */
     public PublicationIssue publicationIssueBySlug(String slug) {
-        return publicationIssueRepository.findBySlug(slug).orElse(null);
+        return publicationIssueService.findBySlug(slug).orElse(null);
     }
 
     /**

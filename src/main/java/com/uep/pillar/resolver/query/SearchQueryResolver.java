@@ -4,8 +4,8 @@ import com.uep.pillar.dto.ArticleEdge;
 import com.uep.pillar.dto.ArticlesConnection;
 import com.uep.pillar.dto.PageInfo;
 import com.uep.pillar.model.Article;
-import com.uep.pillar.repository.ArticleRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.uep.pillar.service.ArticleService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,14 +19,10 @@ import java.util.stream.Collectors;
  * GraphQL Query Resolver for search-related queries.
  */
 @Component
+@RequiredArgsConstructor
 public class SearchQueryResolver {
 
-    private final ArticleRepository articleRepository;
-
-    @Autowired
-    public SearchQueryResolver(ArticleRepository articleRepository) {
-        this.articleRepository = articleRepository;
-    }
+    private final ArticleService articleService;
 
     /**
      * Search articles using full-text search.
@@ -57,7 +53,7 @@ public class SearchQueryResolver {
         }
 
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
-        Page<Article> page = articleRepository.search(query, pageable);
+        Page<Article> page = articleService.searchPublished(query, pageable);
 
         // Convert to edges
         List<ArticleEdge> edges = page.getContent().stream()

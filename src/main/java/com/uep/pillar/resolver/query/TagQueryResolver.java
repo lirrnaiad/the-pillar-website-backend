@@ -1,8 +1,8 @@
 package com.uep.pillar.resolver.query;
 
 import com.uep.pillar.model.Tag;
-import com.uep.pillar.repository.TagRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.uep.pillar.service.TagService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -11,14 +11,10 @@ import java.util.List;
  * GraphQL Query Resolver for Tag-related queries.
  */
 @Component
+@RequiredArgsConstructor
 public class TagQueryResolver {
 
-    private final TagRepository tagRepository;
-
-    @Autowired
-    public TagQueryResolver(TagRepository tagRepository) {
-        this.tagRepository = tagRepository;
-    }
+    private final TagService tagService;
 
     /**
      * Get all tags.
@@ -26,7 +22,7 @@ public class TagQueryResolver {
      * @return list of all tags
      */
     public List<Tag> tags() {
-        return tagRepository.findAll();
+        return tagService.findAll();
     }
 
     /**
@@ -38,8 +34,8 @@ public class TagQueryResolver {
     public Tag tag(String id) {
         try {
             Integer tagId = Integer.parseInt(id);
-            return tagRepository.findById(tagId).orElse(null);
-        } catch (NumberFormatException e) {
+            return tagService.findById(tagId);
+        } catch (NumberFormatException | com.uep.pillar.exception.ResourceNotFoundException e) {
             return null;
         }
     }
@@ -51,7 +47,7 @@ public class TagQueryResolver {
      * @return the tag if found, null otherwise
      */
     public Tag tagBySlug(String slug) {
-        return tagRepository.findBySlug(slug).orElse(null);
+        return tagService.findBySlug(slug).orElse(null);
     }
 }
 

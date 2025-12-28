@@ -1,8 +1,8 @@
 package com.uep.pillar.resolver.query;
 
 import com.uep.pillar.model.User;
-import com.uep.pillar.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.uep.pillar.service.UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -11,14 +11,10 @@ import org.springframework.stereotype.Component;
  * GraphQL Query Resolver for User-related queries.
  */
 @Component
+@RequiredArgsConstructor
 public class UserQueryResolver {
 
-    private final UserRepository userRepository;
-
-    @Autowired
-    public UserQueryResolver(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    private final UserService userService;
 
     /**
      * Get a user by ID.
@@ -29,8 +25,8 @@ public class UserQueryResolver {
     public User user(String id) {
         try {
             Long userId = Long.parseLong(id);
-            return userRepository.findById(userId).orElse(null);
-        } catch (NumberFormatException e) {
+            return userService.findById(userId);
+        } catch (NumberFormatException | com.uep.pillar.exception.ResourceNotFoundException e) {
             return null;
         }
     }
@@ -57,15 +53,15 @@ public class UserQueryResolver {
             } else if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
                 // If using UserDetails, extract email and find user
                 String email = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
-                return userRepository.findByEmail(email).orElse(null);
+                return userService.findByEmail(email).orElse(null);
             } else if (principal instanceof String) {
                 // If principal is a string (email or ID), try to find user
                 String identifier = (String) principal;
                 try {
                     Long userId = Long.parseLong(identifier);
-                    return userRepository.findById(userId).orElse(null);
-                } catch (NumberFormatException e) {
-                    return userRepository.findByEmail(identifier).orElse(null);
+                    return userService.findById(userId);
+                } catch (NumberFormatException | com.uep.pillar.exception.ResourceNotFoundException e) {
+                    return userService.findByEmail(identifier).orElse(null);
                 }
             }
             
