@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -207,6 +208,24 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      */
     @Query("SELECT a FROM Article a JOIN a.tags t WHERE t.slug = :tagSlug AND a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
     Page<Article> findPublishedByTagSlug(@Param("tagSlug") String tagSlug, Pageable pageable);
+
+    /**
+     * Find published articles by tag IDs.
+     *
+     * @param tagIds collection of tag IDs
+     * @param pageable pagination info
+     * @return paginated list of articles with any of the given tags
+     */
+    @Query("SELECT DISTINCT a FROM Article a JOIN a.tags t WHERE t.id IN :tagIds AND a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
+    Page<Article> findPublishedByTagIds(@Param("tagIds") Collection<Integer> tagIds, Pageable pageable);
+
+    /**
+     * Sum view counts across all articles.
+     *
+     * @return total view count (0 if none)
+     */
+    @Query("SELECT COALESCE(SUM(a.viewCount), 0) FROM Article a")
+    long sumViewCount();
 
     // ==================== SOFT DELETE & RESTORE ====================
 

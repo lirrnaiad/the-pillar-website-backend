@@ -7,7 +7,6 @@ import com.uep.pillar.dto.ArticleSort;
 import com.uep.pillar.dto.PageInfo;
 import com.uep.pillar.model.Article;
 import com.uep.pillar.service.ArticleService;
-import com.uep.pillar.repository.ArticleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,7 +27,6 @@ import java.util.stream.Collectors;
 public class ArticleQueryResolver {
 
     private final ArticleService articleService;
-    private final ArticleRepository articleRepository; // Still needed for complex queries
 
     /**
      * Get a single article by slug (SEO-friendly URL).
@@ -89,8 +87,8 @@ public class ArticleQueryResolver {
         // Create pageable
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sortSpec);
 
-        // Build query based on filter
-        Page<Article> articlePage = buildQuery(filter, pageable);
+        // Delegate filtering to service layer
+        Page<Article> articlePage = articleService.findWithFilter(filter, pageable);
 
         // Convert to connection
         return buildConnection(articlePage, pageNumber);
@@ -128,10 +126,7 @@ public class ArticleQueryResolver {
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sortSpec);
 
         // Query published articles by category slug
-        Page<Article> articlePage = articleRepository.findPublishedByCategorySlug(
-                categorySlug, 
-                pageable
-        );
+        Page<Article> articlePage = articleService.findPublishedByCategorySlug(categorySlug, pageable);
 
         return buildConnection(articlePage, pageNumber);
     }
@@ -145,8 +140,21 @@ public class ArticleQueryResolver {
     public List<Article> featuredArticles(Integer first) {
         int limit = first != null ? Math.min(first, 50) : 5; // Max 50 featured articles
         Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "publishedAt"));
-        Page<Article> featuredPage = articleRepository.findTopFeatured(pageable);
+        Page<Article> featuredPage = articleService.findFeatured(pageable);
         return featuredPage.getContent();
+    }
+
+    /**
+     * Get recent published articles.
+     *
+     * @param first number of articles to return (default: 10)
+     * @return list of recent articles
+     */
+    public List<Article> recentArticles(Integer first) {
+        int limit = first != null ? Math.min(first, 50) : 10; // Max 50 recent articles
+        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "publishedAt"));
+        Page<Article> recentPage = articleService.findRecentPublished(pageable);
+        return recentPage.getContent();
     }
 
     // ==================== HELPER METHODS ====================
@@ -173,60 +181,6 @@ public class ArticleQueryResolver {
         };
 
         return Sort.by(direction, fieldName);
-    }
-
-    /**
-     * Build query based on filter and execute it.
-     * NOTE: Currently only supports single filter conditions. Multiple filters applied simultaneously
-     * are not yet supported and will use only the first matching condition in priority order.
-     * Priority order: status > categoryId > authorId > featured > search > issueId > tagIds
-     */
-    private Page<Article> buildQuery(ArticleFilter filter, Pageable pageable) {
-        if (filter == null) {
-            // No filter, return all articles
-            return articleRepository.findAll(pageable);
-        }
-
-        // Filter by status (highest priority)
-        if (filter.getStatus() != null) {
-            return articleRepository.findByStatus(filter.getStatus(), pageable);
-        }
-
-        // Filter by category
-        if (filter.getCategoryId() != null) {
-            return articleRepository.findByCategoryId(filter.getCategoryId().intValue(), pageable);
-        }
-
-        // Filter by author
-        if (filter.getAuthorId() != null) {
-            return articleRepository.findByAuthorId(filter.getAuthorId(), pageable);
-        }
-
-        // Filter by featured
-        if (filter.getFeatured() != null && filter.getFeatured()) {
-            return articleRepository.findTopFeatured(pageable);
-        }
-
-        // Filter by search query
-        if (filter.getSearch() != null && !filter.getSearch().trim().isEmpty()) {
-            return articleRepository.search(filter.getSearch().trim(), pageable);
-        }
-
-        // Filter by issue
-        if (filter.getIssueId() != null) {
-            return articleRepository.findByIssueId(filter.getIssueId(), pageable);
-        }
-
-        // Filter by tags - return empty result if tag filtering is requested
-        // This prevents returning all articles when tag filtering is expected
-        if (filter.getTagIds() != null && !filter.getTagIds().isEmpty()) {
-            // Tag filtering with multiple tag IDs is not yet implemented
-            // Return empty result set to avoid confusion
-            return Page.empty(pageable);
-        }
-
-        // No specific filter, return all
-        return articleRepository.findAll(pageable);
     }
 
     /**

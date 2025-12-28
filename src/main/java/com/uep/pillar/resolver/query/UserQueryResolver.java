@@ -78,5 +78,12 @@ public class UserQueryResolver {
         
         return null;
     }
+
+    /**
+     * Get all users.
+     */
+    public java.util.List<User> users() {
+        return userService.findAll();
+    }
 }
 
