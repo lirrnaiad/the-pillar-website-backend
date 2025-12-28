@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class UserMutationResolver {
+public class UserMutationResolver extends BaseMutationResolver {
 
     private final UserService userService;
     private final RoleRepository roleRepository;
@@ -32,7 +32,7 @@ public class UserMutationResolver {
         if (input.getRoleId() != null) {
             Integer roleId = parseIntegerId(input.getRoleId(), "Role ID");
             role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new IllegalArgumentException("Role not found: " + roleId));
+                .orElseThrow(() -> new IllegalArgumentException("Role not found with ID: " + roleId));
         }
 
         // Build user with raw password (service will hash it)
@@ -63,7 +63,7 @@ public class UserMutationResolver {
         if (input.getRoleId() != null) {
             Integer roleId = parseIntegerId(input.getRoleId(), "Role ID");
             role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new IllegalArgumentException("Role not found: " + roleId));
+                .orElseThrow(() -> new IllegalArgumentException("Role not found with ID: " + roleId));
         }
 
         // Use updateWithEmail if email is changing
@@ -110,29 +110,5 @@ public class UserMutationResolver {
         // Change to new password
         userService.changePassword(userId, newPassword);
         return true;
-    }
-
-    // ==================== HELPER METHODS ====================
-
-    /**
-     * Parse Long ID from GraphQL ID string.
-     */
-    private Long parseLongId(String id, String fieldName) {
-        try {
-            return Long.parseLong(id);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid " + fieldName + " format: " + id);
-        }
-    }
-
-    /**
-     * Parse Integer ID from GraphQL ID string.
-     */
-    private Integer parseIntegerId(String id, String fieldName) {
-        try {
-            return Integer.parseInt(id);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid " + fieldName + " format: " + id);
-        }
     }
 }

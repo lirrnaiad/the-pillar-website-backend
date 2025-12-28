@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class CategoryMutationResolver {
+public class CategoryMutationResolver extends BaseMutationResolver {
 
     private final CategoryService categoryService;
 
@@ -60,18 +60,5 @@ public class CategoryMutationResolver {
         Integer categoryId = parseIntegerId(id, "Category ID");
         categoryService.delete(categoryId);
         return true;
-    }
-
-    // ==================== HELPER METHODS ====================
-
-    /**
-     * Parse Integer ID from GraphQL ID string.
-     */
-    private Integer parseIntegerId(String id, String fieldName) {
-        try {
-            return Integer.parseInt(id);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid " + fieldName + " format: " + id);
-        }
     }
 }
