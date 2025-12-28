@@ -99,8 +99,9 @@ public class SlugServiceImpl implements SlugService {
         if (excludeId == null) {
             return categoryRepository.existsBySlug(slug);
         }
+        Integer categoryId = excludeId.intValue();
         return categoryRepository.findBySlug(slug)
-                .map(c -> !c.getId().equals(excludeId.intValue()))
+                .map(c -> !c.getId().equals(categoryId))
                 .orElse(false);
     }
 
@@ -108,8 +109,9 @@ public class SlugServiceImpl implements SlugService {
         if (excludeId == null) {
             return tagRepository.existsBySlug(slug);
         }
+        Integer tagId = excludeId.intValue();
         return tagRepository.findBySlug(slug)
-                .map(t -> !t.getId().equals(excludeId.intValue()))
+                .map(t -> !t.getId().equals(tagId))
                 .orElse(false);
     }
 

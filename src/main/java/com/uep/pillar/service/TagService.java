@@ -82,9 +82,8 @@ public class TagService {
                 result.addAll(tagRepository.saveAll(toCreate));
             } catch (Exception e) {
                 // Handle potential unique constraint violations from race conditions
-                // Re-query for tags that might have been created concurrently
-                List<Tag> refetched = tagRepository.findByNameIn(names);
-                return refetched;
+                // Re-query to get the complete, updated list
+                result = tagRepository.findByNameIn(names);
             }
         }
         return result;
