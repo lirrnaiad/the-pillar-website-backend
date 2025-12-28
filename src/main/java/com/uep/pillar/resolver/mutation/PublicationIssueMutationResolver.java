@@ -4,7 +4,7 @@ import com.uep.pillar.dto.CreatePublicationIssueInput;
 import com.uep.pillar.dto.UpdatePublicationIssueInput;
 import com.uep.pillar.model.PublicationIssue;
 import com.uep.pillar.service.PublicationIssueService;
-import lombok.RequiredArgsConstructor;
+import com.uep.pillar.service.UserService;
 import org.springframework.stereotype.Component;
 
 /**
@@ -12,10 +12,15 @@ import org.springframework.stereotype.Component;
  * Handles publication issue creation, updates, and deletion.
  */
 @Component
-@RequiredArgsConstructor
 public class PublicationIssueMutationResolver extends BaseMutationResolver {
 
     private final PublicationIssueService publicationIssueService;
+
+    // UserService is required by BaseMutationResolver for getCurrentUser()
+    public PublicationIssueMutationResolver(PublicationIssueService publicationIssueService, UserService userService) {
+        super(userService);
+        this.publicationIssueService = publicationIssueService;
+    }
 
     /**
      * Create a new publication issue.

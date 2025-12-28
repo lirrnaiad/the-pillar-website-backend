@@ -199,6 +199,16 @@ type PageInfo {
     endCursor: String
 }
 
+"""
+Authentication response containing JWT token and user information.
+"""
+type AuthResponse {
+    token: String!
+    user: User!
+    expiresIn: Long!
+    tokenType: String!
+}
+
 # ==================== INPUT TYPES ====================
 
 """
@@ -561,6 +571,34 @@ type PublicationStatistics {
 # ==================== MUTATIONS ====================
 
 type Mutation {
+    # Authentication mutations
+    """
+    Login with email and password.
+    Returns JWT token and user information.
+
+    Input constraints:
+    - email must be in a valid email format.
+    - password must be at least 8 characters long.
+    """
+    login(email: String!, password: String!): AuthResponse!
+
+    """
+    Register a new user account.
+    Returns JWT token and user information.
+
+    Input constraints:
+    - email must be in a valid email format.
+    - password must be at least 8 characters long and meet minimum strength requirements.
+    - roleId must be a valid integer representing an existing role ID.
+    """
+    register(email: String!, password: String!, firstName: String!, lastName: String!, roleId: Int): AuthResponse!
+
+    """
+    Refresh an existing JWT token.
+    Returns a new token with extended expiration.
+    """
+    refreshToken(token: String!): AuthResponse!
+
     # Article mutations
     """
     Create a new article.

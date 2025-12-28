@@ -4,7 +4,7 @@ import com.uep.pillar.dto.CreateMediaInput;
 import com.uep.pillar.model.Media;
 import com.uep.pillar.model.User;
 import com.uep.pillar.service.MediaService;
-import lombok.RequiredArgsConstructor;
+import com.uep.pillar.service.UserService;
 import org.springframework.stereotype.Component;
 
 /**
@@ -12,10 +12,15 @@ import org.springframework.stereotype.Component;
  * Handles media upload and deletion.
  */
 @Component
-@RequiredArgsConstructor
 public class MediaMutationResolver extends BaseMutationResolver {
 
     private final MediaService mediaService;
+
+    // UserService is required by BaseMutationResolver for getCurrentUser()
+    public MediaMutationResolver(MediaService mediaService, UserService userService) {
+        super(userService);
+        this.mediaService = mediaService;
+    }
 
     /**
      * Upload a new media file.
