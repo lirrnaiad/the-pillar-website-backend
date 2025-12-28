@@ -35,8 +35,11 @@ public class MediaService {
                               MediaType type, Long sizeBytes, Integer width, Integer height,
                               User uploadedBy) {
         // Validate required fields
+        // Note: publicId is required for Cloudinary integration (per ARCHITECTURE.md).
+        // Cloudinary always provides a publicId, which is needed for transformations and deletion.
+        // The database schema allows null for flexibility, but the service enforces this business rule.
         if (publicId == null || publicId.trim().isEmpty()) {
-            throw new IllegalArgumentException("publicId is required");
+            throw new IllegalArgumentException("publicId is required for Cloudinary media");
         }
         if (url == null || url.trim().isEmpty()) {
             throw new IllegalArgumentException("url is required");
