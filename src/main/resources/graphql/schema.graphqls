@@ -427,6 +427,7 @@ type Query {
         categorySlug: String!
         first: Int = 10
         after: String
+        sort: ArticleSort
     ): ArticlesConnection!
 
     """

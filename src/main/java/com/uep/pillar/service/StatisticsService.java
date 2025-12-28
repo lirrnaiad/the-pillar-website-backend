@@ -28,7 +28,7 @@ public class StatisticsService {
         long totalViews = articleRepository.sumViewCount();
 
         float avgViewsPerArticle = totalArticles > 0
-                ? (float) totalViews / (float) totalArticles
+                ? (float) totalViews / totalArticles
                 : 0f;
 
         return ArticleStatistics.builder()
