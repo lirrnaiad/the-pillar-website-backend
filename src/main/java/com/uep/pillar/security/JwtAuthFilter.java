@@ -44,12 +44,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 String role = jwtTokenProvider.getRoleFromToken(jwt);
                 
                 // Construct UserDetails from JWT claims to avoid database lookup
+                // Handle null role gracefully (though tokens should always have a role)
+                SimpleGrantedAuthority authority = role != null 
+                    ? new SimpleGrantedAuthority("ROLE_" + role)
+                    : new SimpleGrantedAuthority("ROLE_USER"); // Default fallback
+                
                 UserDetails userDetails = User.builder()
                     .username(email)
                     .password("") // Password not needed for token-based auth
-                    .authorities(Collections.singletonList(
-                        new SimpleGrantedAuthority("ROLE_" + role)
-                    ))
+                    .authorities(Collections.singletonList(authority))
                     .build();
                 
                 UsernamePasswordAuthenticationToken authentication = 

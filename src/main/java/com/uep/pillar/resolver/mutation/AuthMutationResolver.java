@@ -51,7 +51,8 @@ public class AuthMutationResolver {
         try {
             return authService.refreshToken(token);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Token refresh failed");
+            // Generic error message to avoid leaking implementation details
+            throw new IllegalArgumentException("Invalid or expired token");
         }
     }
 }

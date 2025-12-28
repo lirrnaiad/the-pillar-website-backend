@@ -129,6 +129,7 @@ public class JwtTokenProvider {
                     .verifyWith(getSigningKey())
                     .build()
                     .parseSignedClaims(token);
+            // Expiration is already validated during parsing; no need for explicit check
             return true;
         } catch (Exception e) {
             log.error("JWT token validation error: {}", e.getMessage());
