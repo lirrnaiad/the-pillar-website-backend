@@ -7,7 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Article edge for pagination in GraphQL connections.
+ * Article edge for pagination.
+ * Contains the article node and cursor for fetching next/previous page.
  */
 @Data
 @Builder

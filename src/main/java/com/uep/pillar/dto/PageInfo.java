@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Pagination information for GraphQL connections.
+ * Pagination information for cursor-based pagination.
  */
 @Data
 @Builder

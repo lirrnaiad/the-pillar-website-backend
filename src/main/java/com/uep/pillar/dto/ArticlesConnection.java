@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * Paginated articles result for GraphQL connections.
+ * Paginated articles result with cursor-based pagination.
  */
 @Data
 @Builder
