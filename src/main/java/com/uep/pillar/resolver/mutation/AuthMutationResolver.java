@@ -3,7 +3,6 @@ package com.uep.pillar.resolver.mutation;
 import com.uep.pillar.dto.AuthResponse;
 import com.uep.pillar.service.AuthService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Component;
 
 /**
@@ -24,11 +23,7 @@ public class AuthMutationResolver {
      * @return authentication response with JWT token
      */
     public AuthResponse login(String email, String password) {
-        try {
-            return authService.login(email, password);
-        } catch (BadCredentialsException e) {
-            throw new IllegalArgumentException("Invalid email or password");
-        }
+        return authService.login(email, password);
     }
 
     /**
@@ -42,13 +37,8 @@ public class AuthMutationResolver {
      * @return authentication response with JWT token
      */
     public AuthResponse register(String email, String password, String firstName, 
-                                 String lastName, String roleId) {
-        try {
-            Integer parsedRoleId = roleId != null ? Integer.parseInt(roleId) : null;
-            return authService.register(email, password, firstName, lastName, parsedRoleId);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid role ID format");
-        }
+                                 String lastName, Integer roleId) {
+        return authService.register(email, password, firstName, lastName, roleId);
     }
 
     /**
@@ -61,7 +51,8 @@ public class AuthMutationResolver {
         try {
             return authService.refreshToken(token);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Token refresh failed: " + e.getMessage());
+            // Generic error message to avoid leaking implementation details
+            throw new IllegalArgumentException("Invalid or expired token");
         }
     }
 }

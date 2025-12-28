@@ -3,6 +3,7 @@ package com.uep.pillar.config;
 import com.uep.pillar.security.JwtAuthFilter;
 import com.uep.pillar.security.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -33,6 +34,9 @@ public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
+    private String[] allowedOrigins;
+
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
@@ -51,7 +55,8 @@ public class SecurityConfig {
         http
             .authenticationProvider(authenticationProvider())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .csrf(csrf -> csrf.disable())
+            // CSRF is disabled for stateless JWT-based API endpoints; remains enabled for other paths if needed
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/graphql", "/altair/**", "/error", "/actuator/health"))
             .cors(cors -> {})
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/graphql").permitAll()
@@ -68,7 +73,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:3000"));
+        // CORS origins are configurable via environment variable.
+        // Default: http://localhost:5173,http://localhost:3000 for development.
+        // IMPORTANT: Override this in production via cors.allowed-origins property.
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);

@@ -2,7 +2,9 @@ package com.uep.pillar.security;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -12,14 +14,17 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.util.Collections;
 
 /**
  * JWT Authentication Filter that processes JWT tokens from Authorization header.
  * Extends OncePerRequestFilter to ensure this filter runs once per request.
+ * 
+ * Performance optimization: Constructs UserDetails from JWT claims directly
+ * to avoid database lookups on every authenticated request.
  */
 @Component
 @RequiredArgsConstructor
@@ -27,7 +32,6 @@ import java.io.IOException;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final UserDetailsService userDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, 
@@ -37,8 +41,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
                 String email = jwtTokenProvider.getUsernameFromToken(jwt);
+                String role = jwtTokenProvider.getRoleFromToken(jwt);
                 
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                // Construct UserDetails from JWT claims to avoid database lookup
+                // Handle null role gracefully (though tokens should always have a role)
+                SimpleGrantedAuthority authority = role != null 
+                    ? new SimpleGrantedAuthority("ROLE_" + role)
+                    : new SimpleGrantedAuthority("ROLE_USER"); // Default fallback
+                
+                UserDetails userDetails = User.builder()
+                    .username(email)
+                    .password("") // Password not needed for token-based auth
+                    .authorities(Collections.singletonList(authority))
+                    .build();
                 
                 UsernamePasswordAuthenticationToken authentication = 
                     new UsernamePasswordAuthenticationToken(
