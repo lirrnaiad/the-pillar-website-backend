@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class PublicationIssueMutationResolver {
+public class PublicationIssueMutationResolver extends BaseMutationResolver {
 
     private final PublicationIssueService publicationIssueService;
 
@@ -74,18 +74,5 @@ public class PublicationIssueMutationResolver {
         Long issueId = parseLongId(id, "PublicationIssue ID");
         publicationIssueService.delete(issueId);
         return true;
-    }
-
-    // ==================== HELPER METHODS ====================
-
-    /**
-     * Parse Long ID from GraphQL ID string.
-     */
-    private Long parseLongId(String id, String fieldName) {
-        try {
-            return Long.parseLong(id);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid " + fieldName + " format: " + id);
-        }
     }
 }

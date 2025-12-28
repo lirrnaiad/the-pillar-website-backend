@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class TagMutationResolver {
+public class TagMutationResolver extends BaseMutationResolver {
 
     private final TagService tagService;
 
@@ -51,18 +51,5 @@ public class TagMutationResolver {
         Integer tagId = parseIntegerId(id, "Tag ID");
         tagService.delete(tagId);
         return true;
-    }
-
-    // ==================== HELPER METHODS ====================
-
-    /**
-     * Parse Integer ID from GraphQL ID string.
-     */
-    private Integer parseIntegerId(String id, String fieldName) {
-        try {
-            return Integer.parseInt(id);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid " + fieldName + " format: " + id);
-        }
     }
 }

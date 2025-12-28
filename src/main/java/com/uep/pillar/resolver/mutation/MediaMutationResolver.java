@@ -5,8 +5,6 @@ import com.uep.pillar.model.Media;
 import com.uep.pillar.model.User;
 import com.uep.pillar.service.MediaService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 /**
@@ -15,7 +13,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class MediaMutationResolver {
+public class MediaMutationResolver extends BaseMutationResolver {
 
     private final MediaService mediaService;
 
@@ -54,38 +52,5 @@ public class MediaMutationResolver {
         Long mediaId = parseLongId(id, "Media ID");
         mediaService.delete(mediaId);
         return true;
-    }
-
-    // ==================== HELPER METHODS ====================
-
-    /**
-     * Get current authenticated user from SecurityContext.
-     */
-    private User getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        
-        if (authentication == null || !authentication.isAuthenticated() 
-            || "anonymousUser".equals(authentication.getPrincipal())) {
-            return null;
-        }
-
-        Object principal = authentication.getPrincipal();
-        
-        if (principal instanceof User) {
-            return (User) principal;
-        }
-        
-        return null;
-    }
-
-    /**
-     * Parse Long ID from GraphQL ID string.
-     */
-    private Long parseLongId(String id, String fieldName) {
-        try {
-            return Long.parseLong(id);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid " + fieldName + " format: " + id);
-        }
     }
 }

@@ -3,13 +3,14 @@ package com.uep.pillar.resolver.mutation;
 import com.uep.pillar.dto.CreateArticleInput;
 import com.uep.pillar.dto.UpdateArticleInput;
 import com.uep.pillar.model.Article;
+import com.uep.pillar.model.Media;
 import com.uep.pillar.model.Tag;
 import com.uep.pillar.model.User;
+import com.uep.pillar.repository.ArticleRepository;
+import com.uep.pillar.repository.MediaRepository;
 import com.uep.pillar.service.ArticleService;
 import com.uep.pillar.service.TagService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -22,10 +23,12 @@ import java.util.stream.Collectors;
  */
 @Component
 @RequiredArgsConstructor
-public class ArticleMutationResolver {
+public class ArticleMutationResolver extends BaseMutationResolver {
 
     private final ArticleService articleService;
     private final TagService tagService;
+    private final MediaRepository mediaRepository;
+    private final ArticleRepository articleRepository;
 
     /**
      * Create a new article.
@@ -64,6 +67,31 @@ public class ArticleMutationResolver {
             tagIds,
             input.getSlug()
         );
+
+        // Set cover image if provided
+        if (input.getCoverId() != null) {
+            Long coverId = parseLongId(input.getCoverId(), "Cover ID");
+            Media cover = mediaRepository.findById(coverId)
+                .orElseThrow(() -> new IllegalArgumentException("Cover media not found: " + coverId));
+            article.setCover(cover);
+        }
+
+        // Set metadata fields if provided
+        if (input.getMetaTitle() != null) {
+            article.setMetaTitle(input.getMetaTitle());
+        }
+        if (input.getMetaDescription() != null) {
+            article.setMetaDescription(input.getMetaDescription());
+        }
+        if (input.getOgImage() != null) {
+            article.setOgImage(input.getOgImage());
+        }
+
+        // Save changes if any metadata was set
+        if (input.getCoverId() != null || input.getMetaTitle() != null 
+            || input.getMetaDescription() != null || input.getOgImage() != null) {
+            article = articleRepository.save(article);
+        }
 
         // Handle initial status if not DRAFT
         if (input.getStatus() != null && input.getStatus() != com.uep.pillar.model.enums.ArticleStatus.DRAFT) {
@@ -118,6 +146,31 @@ public class ArticleMutationResolver {
             input.getSlug()
         );
 
+        // Set cover image if provided
+        if (input.getCoverId() != null) {
+            Long coverId = parseLongId(input.getCoverId(), "Cover ID");
+            Media cover = mediaRepository.findById(coverId)
+                .orElseThrow(() -> new IllegalArgumentException("Cover media not found: " + coverId));
+            article.setCover(cover);
+        }
+
+        // Set metadata fields if provided
+        if (input.getMetaTitle() != null) {
+            article.setMetaTitle(input.getMetaTitle());
+        }
+        if (input.getMetaDescription() != null) {
+            article.setMetaDescription(input.getMetaDescription());
+        }
+        if (input.getOgImage() != null) {
+            article.setOgImage(input.getOgImage());
+        }
+
+        // Save changes if any metadata was set
+        if (input.getCoverId() != null || input.getMetaTitle() != null 
+            || input.getMetaDescription() != null || input.getOgImage() != null) {
+            article = articleRepository.save(article);
+        }
+
         // Handle featured flag
         if (input.getFeatured() != null && input.getFeatured() != article.isFeatured()) {
             article = articleService.setFeatured(id, input.getFeatured());
@@ -125,7 +178,7 @@ public class ArticleMutationResolver {
 
         // Handle status change if provided
         if (input.getStatus() != null && input.getStatus() != article.getStatus()) {
-            article = handleStatusTransition(id, article.getStatus(), input.getStatus());
+            article = handleStatusTransition(id, input.getStatus());
         }
 
         return article;
@@ -253,7 +306,6 @@ public class ArticleMutationResolver {
      * Handle status transitions between article states.
      */
     private Article handleStatusTransition(Long id, 
-                                           com.uep.pillar.model.enums.ArticleStatus current,
                                            com.uep.pillar.model.enums.ArticleStatus target) {
         switch (target) {
             case DRAFT:
@@ -268,49 +320,6 @@ public class ArticleMutationResolver {
                 return articleService.reject(id);
             default:
                 throw new IllegalArgumentException("Unknown article status: " + target);
-        }
-    }
-
-    /**
-     * Get current authenticated user from SecurityContext.
-     */
-    private User getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        
-        if (authentication == null || !authentication.isAuthenticated() 
-            || "anonymousUser".equals(authentication.getPrincipal())) {
-            return null;
-        }
-
-        Object principal = authentication.getPrincipal();
-        
-        if (principal instanceof User) {
-            return (User) principal;
-        }
-        
-        // Could extend to handle UserDetails extraction if needed
-        return null;
-    }
-
-    /**
-     * Parse Long ID from GraphQL ID string.
-     */
-    private Long parseLongId(String id, String fieldName) {
-        try {
-            return Long.parseLong(id);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid " + fieldName + " format: " + id);
-        }
-    }
-
-    /**
-     * Parse Integer ID from GraphQL ID string.
-     */
-    private Integer parseIntegerId(String id, String fieldName) {
-        try {
-            return Integer.parseInt(id);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid " + fieldName + " format: " + id);
         }
     }
 }
