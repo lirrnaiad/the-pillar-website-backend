@@ -468,6 +468,11 @@ type Query {
     """
     tag(id: ID!): Tag
 
+    """
+    Get a tag by slug.
+    """
+    tagBySlug(slug: String!): Tag
+
     # Media queries
     """
     Get all media files.
