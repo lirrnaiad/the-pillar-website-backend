@@ -6,12 +6,14 @@ import com.uep.pillar.repository.PublicationIssueRepository;
 import com.uep.pillar.repository.TagRepository;
 import com.uep.pillar.service.SlugService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SlugServiceImpl implements SlugService {
 
     private final ArticleRepository articleRepository;
@@ -26,14 +28,19 @@ public class SlugServiceImpl implements SlugService {
             base = "item"; // fallback to non-empty slug
         }
 
+        // Truncate base slug before loop to avoid collision issues
+        if (base.length() > 90) {
+            base = truncate(base, 90); // Reserve 10 chars for suffix like "-999999"
+        }
+
         String candidate = base;
-        int counter = 1;
+        int counter = 0; // Start at 0 so first conflict becomes "slug-1"
 
         while (exists(candidate, entityClass, excludeId)) {
             counter++;
             candidate = base + "-" + counter;
             if (candidate.length() > 100) {
-                // ensure max length while appending counter
+                // If counter makes it too long, truncate base further
                 String suffix = "-" + counter;
                 candidate = truncate(base, 100 - suffix.length()) + suffix;
             }
@@ -58,7 +65,6 @@ public class SlugServiceImpl implements SlugService {
 
     /**
      * Check if a slug exists for the given entity class.
-     * Optimized to reduce database queries when excludeId is provided.
      * 
      * @param slug the slug to check
      * @param entityClass the entity class (Article, Category, Tag, PublicationIssue)
@@ -70,50 +76,52 @@ public class SlugServiceImpl implements SlugService {
 
         String className = entityClass.getSimpleName();
         
-        // If excludeId is provided, check if slug belongs to that record first
-        // This avoids unnecessary existsBySlug query if it's the same record
-        if (excludeId != null) {
-            if (isSameRecord(slug, excludeId, className)) {
-                return false; // Same record, no conflict
-            }
-        }
-
-        // Check if slug exists for any record
+        // Check if slug exists, excluding the record with excludeId if provided
         return switch (className) {
-            case "Article" -> articleRepository.existsBySlug(slug);
-            case "Category" -> categoryRepository.existsBySlug(slug);
-            case "Tag" -> tagRepository.existsBySlug(slug);
-            case "PublicationIssue" -> publicationIssueRepository.existsBySlug(slug);
+            case "Article" -> existsForArticle(slug, excludeId);
+            case "Category" -> existsForCategory(slug, excludeId);
+            case "Tag" -> existsForTag(slug, excludeId);
+            case "PublicationIssue" -> existsForPublicationIssue(slug, excludeId);
             default -> false;
         };
     }
 
-    /**
-     * Check if the slug belongs to the record with the given excludeId.
-     * This allows updating a record without triggering a uniqueness conflict.
-     */
-    private boolean isSameRecord(String slug, Long excludeId, String className) {
-        if (excludeId == null) return false;
-        
-        try {
-            return switch (className) {
-                case "Article" -> articleRepository.findBySlug(slug)
-                        .map(a -> a.getId() != null && a.getId().equals(excludeId))
-                        .orElse(false);
-                case "Category" -> categoryRepository.findBySlug(slug)
-                        .map(c -> c.getId() != null && c.getId().longValue() == excludeId)
-                        .orElse(false);
-                case "Tag" -> tagRepository.findBySlug(slug)
-                        .map(t -> t.getId() != null && t.getId().longValue() == excludeId)
-                        .orElse(false);
-                case "PublicationIssue" -> publicationIssueRepository.findBySlug(slug)
-                        .map(pi -> pi.getId() != null && pi.getId().equals(excludeId))
-                        .orElse(false);
-                default -> false;
-            };
-        } catch (Exception ignored) {
-            return false;
+    private boolean existsForArticle(String slug, Long excludeId) {
+        if (excludeId == null) {
+            return articleRepository.existsBySlug(slug);
         }
+        return articleRepository.findBySlug(slug)
+                .map(a -> !a.getId().equals(excludeId))
+                .orElse(false);
+    }
+
+    private boolean existsForCategory(String slug, Long excludeId) {
+        if (excludeId == null) {
+            return categoryRepository.existsBySlug(slug);
+        }
+        Integer categoryId = excludeId.intValue();
+        return categoryRepository.findBySlug(slug)
+                .map(c -> !c.getId().equals(categoryId))
+                .orElse(false);
+    }
+
+    private boolean existsForTag(String slug, Long excludeId) {
+        if (excludeId == null) {
+            return tagRepository.existsBySlug(slug);
+        }
+        Integer tagId = excludeId.intValue();
+        return tagRepository.findBySlug(slug)
+                .map(t -> !t.getId().equals(tagId))
+                .orElse(false);
+    }
+
+    private boolean existsForPublicationIssue(String slug, Long excludeId) {
+        if (excludeId == null) {
+            return publicationIssueRepository.existsBySlug(slug);
+        }
+        return publicationIssueRepository.findBySlug(slug)
+                .map(pi -> !pi.getId().equals(excludeId))
+                .orElse(false);
     }
 
     private String truncate(String s, int maxLen) {

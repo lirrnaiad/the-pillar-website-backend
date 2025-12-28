@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -15,6 +16,8 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final SlugService slugService;
+    
+    private static final Pattern HEX_COLOR_PATTERN = Pattern.compile("^#[0-9A-Fa-f]{6}$");
 
     @Transactional(readOnly = true)
     public Category findById(Integer id) {
@@ -29,6 +32,7 @@ public class CategoryService {
 
     @Transactional
     public Category create(String name, String description, String color) {
+        validateColor(color);
         String slug = slugService.generateUniqueSlug(name, Category.class, null);
         Category category = Category.builder()
                 .name(name)
@@ -48,7 +52,10 @@ public class CategoryService {
             existing.setSlug(slug);
         }
         if (description != null) existing.setDescription(description);
-        if (color != null) existing.setColor(color);
+        if (color != null) {
+            validateColor(color);
+            existing.setColor(color);
+        }
         return categoryRepository.save(existing);
     }
 
@@ -56,5 +63,15 @@ public class CategoryService {
     public void delete(Integer id) {
         Category existing = findById(id);
         categoryRepository.delete(existing);
+    }
+
+    /**
+     * Validate hex color format.
+     * Expected format: #RRGGBB (e.g., #E53935)
+     */
+    private void validateColor(String color) {
+        if (color != null && !HEX_COLOR_PATTERN.matcher(color).matches()) {
+            throw new IllegalArgumentException("Invalid color format. Expected format: #RRGGBB (e.g., #E53935)");
+        }
     }
 }

@@ -55,15 +55,18 @@ public class TagService {
 
     /**
      * Find existing tags by names or create them if missing.
+     * Uses proper transaction handling to minimize race conditions.
      */
     @Transactional
     public List<Tag> findOrCreateByNames(Collection<String> names) {
         if (names == null || names.isEmpty()) return Collections.emptyList();
+        
         List<Tag> existing = tagRepository.findByNameIn(names);
         Set<String> foundNames = new HashSet<>();
         for (Tag t : existing) {
             if (t.getName() != null) foundNames.add(t.getName());
         }
+        
         List<Tag> toCreate = new ArrayList<>();
         for (String name : names) {
             if (!foundNames.contains(name)) {
@@ -71,9 +74,18 @@ public class TagService {
                 toCreate.add(Tag.builder().name(name).slug(slug).build());
             }
         }
+        
+        // Create a new list to return instead of modifying the repository result
+        List<Tag> result = new ArrayList<>(existing);
         if (!toCreate.isEmpty()) {
-            existing.addAll(tagRepository.saveAll(toCreate));
+            try {
+                result.addAll(tagRepository.saveAll(toCreate));
+            } catch (Exception e) {
+                // Handle potential unique constraint violations from race conditions
+                // Re-query to get the complete, updated list
+                result = tagRepository.findByNameIn(names);
+            }
         }
-        return existing;
+        return result;
     }
 }

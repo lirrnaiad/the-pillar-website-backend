@@ -89,11 +89,18 @@ public class ArticleService {
         }
         Set<Tag> tags = new HashSet<>();
         if (tagIds != null && !tagIds.isEmpty()) {
-            for (Integer tid : tagIds) {
-                Tag tag = tagRepository.findById(tid)
-                        .orElseThrow(() -> new ResourceNotFoundException("Tag", tid));
-                tags.add(tag);
+            // Fix N+1 query: use findAllById to fetch all tags in a single query
+            List<Tag> foundTags = tagRepository.findAllById(tagIds);
+            Set<Integer> foundIds = new HashSet<>();
+            for (Tag tag : foundTags) {
+                foundIds.add(tag.getId());
             }
+            for (Integer tid : tagIds) {
+                if (!foundIds.contains(tid)) {
+                    throw new ResourceNotFoundException("Tag", tid);
+                }
+            }
+            tags.addAll(foundTags);
         }
         builder.tags(tags);
 
@@ -103,11 +110,25 @@ public class ArticleService {
     @Transactional
     public Article update(Long id, String title, String content, String excerpt,
                           Integer categoryId, Long issueId, Collection<Integer> tagIds) {
+        return update(id, title, content, excerpt, categoryId, issueId, tagIds, null);
+    }
+
+    @Transactional
+    public Article update(Long id, String title, String content, String excerpt,
+                          Integer categoryId, Long issueId, Collection<Integer> tagIds,
+                          String slugIfProvided) {
         Article article = findById(id);
-        if (title != null && !title.equals(article.getTitle())) {
+        
+        // Handle slug updates: explicit slug takes precedence, otherwise update on title change
+        if (slugIfProvided != null && !slugIfProvided.trim().isEmpty()) {
+            article.setSlug(slugService.generateUniqueSlug(slugIfProvided, Article.class, id));
+        } else if (title != null && !title.equals(article.getTitle())) {
             article.setTitle(title);
             article.setSlug(slugService.generateUniqueSlug(title, Article.class, id));
+        } else if (title != null) {
+            article.setTitle(title);
         }
+        
         if (content != null) article.setContent(content);
         if (excerpt != null) article.setExcerpt(excerpt);
         if (categoryId != null) {
@@ -121,13 +142,18 @@ public class ArticleService {
             article.setIssue(issue);
         }
         if (tagIds != null) {
-            Set<Tag> tags = new HashSet<>();
-            for (Integer tid : tagIds) {
-                Tag tag = tagRepository.findById(tid)
-                        .orElseThrow(() -> new ResourceNotFoundException("Tag", tid));
-                tags.add(tag);
+            // Fix N+1 query: use findAllById to fetch all tags in a single query
+            List<Tag> foundTags = tagRepository.findAllById(tagIds);
+            Set<Integer> foundTagIds = new HashSet<>();
+            for (Tag tag : foundTags) {
+                foundTagIds.add(tag.getId());
             }
-            article.setTags(tags);
+            for (Integer tid : tagIds) {
+                if (!foundTagIds.contains(tid)) {
+                    throw new ResourceNotFoundException("Tag", tid);
+                }
+            }
+            article.setTags(new HashSet<>(foundTags));
         }
         return articleRepository.save(article);
     }
@@ -176,7 +202,10 @@ public class ArticleService {
             throw new InvalidStatusTransitionException("Only DRAFT or PENDING_REVIEW can be published");
         }
         article.setStatus(ArticleStatus.PUBLISHED);
-        article.setPublishedAt(LocalDateTime.now());
+        // Only set publishedAt if it's null (first publication)
+        if (article.getPublishedAt() == null) {
+            article.setPublishedAt(LocalDateTime.now());
+        }
         return articleRepository.save(article);
     }
 
@@ -203,6 +232,10 @@ public class ArticleService {
     @Transactional
     public Article revertToDraft(Long id) {
         Article article = findById(id);
+        if (article.getStatus() != ArticleStatus.PENDING_REVIEW
+                && article.getStatus() != ArticleStatus.REJECTED) {
+            throw new InvalidStatusTransitionException("Only PENDING_REVIEW or REJECTED can be reverted to DRAFT");
+        }
         article.setStatus(ArticleStatus.DRAFT);
         return articleRepository.save(article);
     }
