@@ -6,7 +6,6 @@ import com.uep.pillar.model.Role;
 import com.uep.pillar.model.User;
 import com.uep.pillar.repository.RoleRepository;
 import com.uep.pillar.service.UserService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,11 +13,15 @@ import org.springframework.stereotype.Component;
  * Handles user creation, updates, deletion, and password changes.
  */
 @Component
-@RequiredArgsConstructor
 public class UserMutationResolver extends BaseMutationResolver {
 
-    private final UserService userService;
     private final RoleRepository roleRepository;
+
+    // UserService is required by BaseMutationResolver for getCurrentUser()
+    public UserMutationResolver(UserService userService, RoleRepository roleRepository) {
+        super(userService);
+        this.roleRepository = roleRepository;
+    }
 
     /**
      * Create a new user.
@@ -46,7 +49,7 @@ public class UserMutationResolver extends BaseMutationResolver {
             .role(role)
             .build();
 
-        return userService.create(user);
+        return this.userService.create(user);
     }
 
     /**
@@ -67,7 +70,7 @@ public class UserMutationResolver extends BaseMutationResolver {
         }
 
         // Use updateWithEmail if email is changing
-        return userService.updateWithEmail(
+        return this.userService.updateWithEmail(
             id,
             input.getEmail(),
             input.getFirstName(),
@@ -86,7 +89,7 @@ public class UserMutationResolver extends BaseMutationResolver {
      */
     public Boolean deleteUser(String id) {
         Long userId = parseLongId(id, "User ID");
-        userService.softDelete(userId);
+        this.userService.softDelete(userId);
         return true;
     }
 
@@ -102,13 +105,13 @@ public class UserMutationResolver extends BaseMutationResolver {
         Long userId = parseLongId(id, "User ID");
         
         // Validate old password
-        User user = userService.findById(userId);
-        if (!userService.validatePassword(oldPassword, user.getPassword())) {
+        User user = this.userService.findById(userId);
+        if (!this.userService.validatePassword(oldPassword, user.getPassword())) {
             throw new IllegalArgumentException("Current password is incorrect");
         }
 
         // Change to new password
-        userService.changePassword(userId, newPassword);
+        this.userService.changePassword(userId, newPassword);
         return true;
     }
 }

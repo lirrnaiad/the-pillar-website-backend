@@ -4,7 +4,7 @@ import com.uep.pillar.dto.CreateCategoryInput;
 import com.uep.pillar.dto.UpdateCategoryInput;
 import com.uep.pillar.model.Category;
 import com.uep.pillar.service.CategoryService;
-import lombok.RequiredArgsConstructor;
+import com.uep.pillar.service.UserService;
 import org.springframework.stereotype.Component;
 
 /**
@@ -12,10 +12,15 @@ import org.springframework.stereotype.Component;
  * Handles category creation, updates, and deletion.
  */
 @Component
-@RequiredArgsConstructor
 public class CategoryMutationResolver extends BaseMutationResolver {
 
     private final CategoryService categoryService;
+
+    // UserService is required by BaseMutationResolver for getCurrentUser()
+    public CategoryMutationResolver(CategoryService categoryService, UserService userService) {
+        super(userService);
+        this.categoryService = categoryService;
+    }
 
     /**
      * Create a new category.

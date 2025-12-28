@@ -9,7 +9,7 @@ import com.uep.pillar.model.User;
 import com.uep.pillar.service.ArticleService;
 import com.uep.pillar.service.MediaService;
 import com.uep.pillar.service.TagService;
-import lombok.RequiredArgsConstructor;
+import com.uep.pillar.service.UserService;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -21,12 +21,20 @@ import java.util.stream.Collectors;
  * Handles article creation, updates, deletion, status transitions, and tag operations.
  */
 @Component
-@RequiredArgsConstructor
 public class ArticleMutationResolver extends BaseMutationResolver {
 
     private final ArticleService articleService;
     private final TagService tagService;
     private final MediaService mediaService;
+
+    // UserService is required by BaseMutationResolver for getCurrentUser()
+    public ArticleMutationResolver(ArticleService articleService, TagService tagService, 
+                                   MediaService mediaService, UserService userService) {
+        super(userService);
+        this.articleService = articleService;
+        this.tagService = tagService;
+        this.mediaService = mediaService;
+    }
 
     /**
      * Create a new article.

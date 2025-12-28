@@ -4,7 +4,7 @@ import com.uep.pillar.dto.CreateTagInput;
 import com.uep.pillar.dto.UpdateTagInput;
 import com.uep.pillar.model.Tag;
 import com.uep.pillar.service.TagService;
-import lombok.RequiredArgsConstructor;
+import com.uep.pillar.service.UserService;
 import org.springframework.stereotype.Component;
 
 /**
@@ -12,10 +12,15 @@ import org.springframework.stereotype.Component;
  * Handles tag creation, updates, and deletion.
  */
 @Component
-@RequiredArgsConstructor
 public class TagMutationResolver extends BaseMutationResolver {
 
     private final TagService tagService;
+
+    // UserService is required by BaseMutationResolver for getCurrentUser()
+    public TagMutationResolver(TagService tagService, UserService userService) {
+        super(userService);
+        this.tagService = tagService;
+    }
 
     /**
      * Create a new tag.
