@@ -35,6 +35,7 @@ public class ArticleService {
     private final TagRepository tagRepository;
     private final CategoryRepository categoryRepository;
     private final PublicationIssueRepository publicationIssueRepository;
+    private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
     public Article findById(Long id) {
@@ -105,7 +106,9 @@ public class ArticleService {
         }
         builder.tags(tags);
 
-        return articleRepository.save(builder.build());
+        Article created = articleRepository.save(builder.build());
+        auditLogService.logArticle(com.uep.pillar.model.enums.AuditAction.CREATE, null, created, null);
+        return created;
     }
 
     @Transactional
@@ -119,6 +122,18 @@ public class ArticleService {
                           Integer categoryId, Long issueId, Collection<Integer> tagIds,
                           String slugIfProvided) {
         Article article = findById(id);
+        // capture state before changes
+        Article before = Article.builder()
+            .id(article.getId())
+            .title(article.getTitle())
+            .slug(article.getSlug())
+            .status(article.getStatus())
+            .featured(article.isFeatured())
+            .viewCount(article.getViewCount())
+            .author(article.getAuthor())
+            .category(article.getCategory())
+            .issue(article.getIssue())
+            .build();
         
         // Handle slug updates: explicit slug takes precedence, otherwise update on title change
         if (slugIfProvided != null && !slugIfProvided.trim().isEmpty()) {
@@ -156,7 +171,9 @@ public class ArticleService {
             }
             article.setTags(new HashSet<>(foundTags));
         }
-        return articleRepository.save(article);
+        Article updated = articleRepository.save(article);
+        auditLogService.logArticle(com.uep.pillar.model.enums.AuditAction.UPDATE, before, updated, null);
+        return updated;
     }
 
     @Transactional
@@ -164,21 +181,26 @@ public class ArticleService {
         // ensure exists first for consistent errors
         Article existing = findById(id);
         articleRepository.softDelete(existing.getId(), LocalDateTime.now());
+        auditLogService.logArticle(com.uep.pillar.model.enums.AuditAction.DELETE, existing, null, null);
     }
 
     @Transactional
     public void restore(Long id) {
         // verify it exists possibly including deleted
-        articleRepository.findByIdIncludingDeleted(id)
+        Article before = articleRepository.findByIdIncludingDeleted(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Article", id));
         articleRepository.restore(id);
+        Article restored = findById(id);
+        auditLogService.logArticle(com.uep.pillar.model.enums.AuditAction.RESTORE, before, restored, null);
     }
 
     @Transactional
     public Article setFeatured(Long id, boolean featured) {
         Article article = findById(id);
         article.setFeatured(featured);
-        return articleRepository.save(article);
+        Article updated = articleRepository.save(article);
+        auditLogService.logArticle(com.uep.pillar.model.enums.AuditAction.UPDATE, null, updated, "feature-toggle");
+        return updated;
     }
 
     @Transactional
@@ -193,7 +215,9 @@ public class ArticleService {
             throw new InvalidStatusTransitionException("Only DRAFT can be submitted for review");
         }
         article.setStatus(ArticleStatus.PENDING_REVIEW);
-        return articleRepository.save(article);
+        Article updated = articleRepository.save(article);
+        auditLogService.logArticle(com.uep.pillar.model.enums.AuditAction.UPDATE, null, updated, "submit-for-review");
+        return updated;
     }
 
     @Transactional
@@ -207,7 +231,9 @@ public class ArticleService {
         if (article.getPublishedAt() == null) {
             article.setPublishedAt(LocalDateTime.now());
         }
-        return articleRepository.save(article);
+        Article updated = articleRepository.save(article);
+        auditLogService.logArticle(com.uep.pillar.model.enums.AuditAction.PUBLISH, null, updated, null);
+        return updated;
     }
 
     @Transactional
@@ -217,7 +243,9 @@ public class ArticleService {
             throw new InvalidStatusTransitionException("Only PENDING_REVIEW can be rejected");
         }
         article.setStatus(ArticleStatus.REJECTED);
-        return articleRepository.save(article);
+        Article updated = articleRepository.save(article);
+        auditLogService.logArticle(com.uep.pillar.model.enums.AuditAction.UPDATE, null, updated, "reject");
+        return updated;
     }
 
     @Transactional
@@ -227,7 +255,9 @@ public class ArticleService {
             throw new InvalidStatusTransitionException("Only PUBLISHED can be archived");
         }
         article.setStatus(ArticleStatus.ARCHIVED);
-        return articleRepository.save(article);
+        Article updated = articleRepository.save(article);
+        auditLogService.logArticle(com.uep.pillar.model.enums.AuditAction.ARCHIVE, null, updated, null);
+        return updated;
     }
 
     @Transactional
@@ -238,7 +268,9 @@ public class ArticleService {
             throw new InvalidStatusTransitionException("Only PENDING_REVIEW or REJECTED can be reverted to DRAFT");
         }
         article.setStatus(ArticleStatus.DRAFT);
-        return articleRepository.save(article);
+        Article updated = articleRepository.save(article);
+        auditLogService.logArticle(com.uep.pillar.model.enums.AuditAction.UPDATE, null, updated, "revert-to-draft");
+        return updated;
     }
 
     @Transactional(readOnly = true)
@@ -291,7 +323,9 @@ public class ArticleService {
         Article article = findById(articleId);
         List<Tag> tags = tagRepository.findBySlugIn(slugs);
         for (Tag t : tags) article.addTag(t);
-        return articleRepository.save(article);
+        Article updated = articleRepository.save(article);
+        auditLogService.logArticle(com.uep.pillar.model.enums.AuditAction.UPDATE, null, updated, "add-tags");
+        return updated;
     }
 
     @Transactional
@@ -299,7 +333,9 @@ public class ArticleService {
         Article article = findById(articleId);
         List<Tag> tags = tagRepository.findBySlugIn(slugs);
         for (Tag t : tags) article.removeTag(t);
-        return articleRepository.save(article);
+        Article updated = articleRepository.save(article);
+        auditLogService.logArticle(com.uep.pillar.model.enums.AuditAction.UPDATE, null, updated, "remove-tags");
+        return updated;
     }
 
     @Transactional(readOnly = true)

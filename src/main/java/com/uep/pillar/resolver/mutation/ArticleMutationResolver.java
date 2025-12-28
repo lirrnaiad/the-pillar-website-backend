@@ -8,9 +8,11 @@ import com.uep.pillar.model.Tag;
 import com.uep.pillar.model.User;
 import com.uep.pillar.service.ArticleService;
 import com.uep.pillar.service.MediaService;
+import com.uep.pillar.service.ArticleRevisionService;
 import com.uep.pillar.service.TagService;
 import com.uep.pillar.service.UserService;
 import org.springframework.stereotype.Component;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.Collections;
 import java.util.Set;
@@ -26,14 +28,17 @@ public class ArticleMutationResolver extends BaseMutationResolver {
     private final ArticleService articleService;
     private final TagService tagService;
     private final MediaService mediaService;
+    private final ArticleRevisionService articleRevisionService;
 
     // UserService is required by BaseMutationResolver for getCurrentUser()
     public ArticleMutationResolver(ArticleService articleService, TagService tagService, 
-                                   MediaService mediaService, UserService userService) {
+                                   MediaService mediaService, ArticleRevisionService articleRevisionService,
+                                   UserService userService) {
         super(userService);
         this.articleService = articleService;
         this.tagService = tagService;
         this.mediaService = mediaService;
+        this.articleRevisionService = articleRevisionService;
     }
 
     /**
@@ -42,6 +47,7 @@ public class ArticleMutationResolver extends BaseMutationResolver {
      * @param input article creation input
      * @return the created article
      */
+    @PreAuthorize("hasAnyRole('ADMIN','EDITOR','WRITER')")
     public Article createArticle(CreateArticleInput input) {
         // Get current authenticated user as author
         User author = getCurrentUser();
@@ -103,8 +109,14 @@ public class ArticleMutationResolver extends BaseMutationResolver {
      * @param input article update input
      * @return the updated article
      */
+    @PreAuthorize("hasAnyRole('ADMIN','EDITOR','WRITER')")
     public Article updateArticle(UpdateArticleInput input) {
         Long id = parseLongId(input.getId(), "Article ID");
+
+        // Save a revision snapshot of the current state before applying updates
+        User editor = getCurrentUser();
+        Article current = articleService.findById(id);
+        articleRevisionService.saveSnapshot(current, editor, null);
 
         // Parse optional IDs
         Integer categoryId = input.getCategoryId() != null 
@@ -154,6 +166,7 @@ public class ArticleMutationResolver extends BaseMutationResolver {
      * @param id the article ID
      * @return true on success
      */
+    @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
     public Boolean deleteArticle(String id) {
         Long articleId = parseLongId(id, "Article ID");
         articleService.softDelete(articleId);
@@ -166,6 +179,7 @@ public class ArticleMutationResolver extends BaseMutationResolver {
      * @param id the article ID
      * @return the published article
      */
+    @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
     public Article publishArticle(String id) {
         Long articleId = parseLongId(id, "Article ID");
         return articleService.publish(articleId);
@@ -177,6 +191,7 @@ public class ArticleMutationResolver extends BaseMutationResolver {
      * @param id the article ID
      * @return the archived article
      */
+    @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
     public Article archiveArticle(String id) {
         Long articleId = parseLongId(id, "Article ID");
         return articleService.archive(articleId);
@@ -189,6 +204,7 @@ public class ArticleMutationResolver extends BaseMutationResolver {
      * @param reason the rejection reason (for logging/audit, not stored in article)
      * @return the rejected article
      */
+    @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
     public Article rejectArticle(String id, String reason) {
         Long articleId = parseLongId(id, "Article ID");
         // Note: Reason is accepted but not stored by service
@@ -202,6 +218,7 @@ public class ArticleMutationResolver extends BaseMutationResolver {
      * @param id the article ID
      * @return the restored article
      */
+    @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
     public Article restoreArticle(String id) {
         Long articleId = parseLongId(id, "Article ID");
         articleService.restore(articleId);
@@ -226,6 +243,7 @@ public class ArticleMutationResolver extends BaseMutationResolver {
      * @param id the article ID
      * @return the updated article
      */
+    @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
     public Article toggleFeatured(String id) {
         Long articleId = parseLongId(id, "Article ID");
         Article article = articleService.findById(articleId);
@@ -239,6 +257,7 @@ public class ArticleMutationResolver extends BaseMutationResolver {
      * @param tagId the tag ID
      * @return the updated article
      */
+    @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
     public Article addArticleTag(String articleId, String tagId) {
         Long artId = parseLongId(articleId, "Article ID");
         Integer tId = parseIntegerId(tagId, "Tag ID");
@@ -255,6 +274,7 @@ public class ArticleMutationResolver extends BaseMutationResolver {
      * @param tagId the tag ID
      * @return the updated article
      */
+    @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
     public Article removeArticleTag(String articleId, String tagId) {
         Long artId = parseLongId(articleId, "Article ID");
         Integer tId = parseIntegerId(tagId, "Tag ID");
@@ -276,7 +296,7 @@ public class ArticleMutationResolver extends BaseMutationResolver {
      * @param ogImage the OG image URL (optional)
      */
     private void applyMetadataFields(Article article, String coverId, 
-                                     String metaTitle, String metaDescription, String ogImage) {
+                                        String metaTitle, String metaDescription, String ogImage) {
         // Set cover image if provided
         if (coverId != null) {
             Long coverMediaId = parseLongId(coverId, "Cover ID");

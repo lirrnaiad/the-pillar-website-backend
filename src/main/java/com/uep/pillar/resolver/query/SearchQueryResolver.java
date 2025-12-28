@@ -5,6 +5,8 @@ import com.uep.pillar.dto.ArticlesConnection;
 import com.uep.pillar.dto.PageInfo;
 import com.uep.pillar.model.Article;
 import com.uep.pillar.service.ArticleService;
+import com.uep.pillar.service.SearchService;
+import com.uep.pillar.dto.SearchHighlight;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 public class SearchQueryResolver {
 
     private final ArticleService articleService;
+    private final SearchService searchService;
 
     /**
      * Search articles using full-text search.
@@ -51,7 +54,7 @@ public class SearchQueryResolver {
         }
 
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
-        Page<Article> page = articleService.searchPublished(query, pageable);
+        Page<Article> page = searchService.searchPublished(query, pageable);
 
         // Convert to edges - each article gets a unique cursor based on its ID
         List<ArticleEdge> edges = page.getContent().stream()
@@ -89,6 +92,14 @@ public class SearchQueryResolver {
      */
     private String encodeCursor(Long articleId) {
         return Base64.getEncoder().encodeToString(("article_" + articleId).getBytes());
+    }
+
+    /**
+     * Search with highlighted snippets suitable for preview rendering.
+     */
+    public List<SearchHighlight> searchHighlights(String query, Integer limit) {
+        int max = limit != null ? limit : 10;
+        return searchService.searchWithHighlights(query, max);
     }
 }
 

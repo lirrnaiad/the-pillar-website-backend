@@ -23,7 +23,18 @@
         <graphql.spring.boot.starter.version>15.0.0</graphql.spring.boot.starter.version>
         <graphql.java.tools.version>13.0.2</graphql.java.tools.version>
         <graphql.altair.version>11.1.0</graphql.altair.version>
+        <lombok.version>1.18.30</lombok.version>
     </properties>
+    
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     
     <dependencies>
         <!-- Spring Boot Starters -->
@@ -110,6 +121,12 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
+        </dependency>
+        <!-- Cloudinary Java SDK -->
+        <dependency>
+            <groupId>com.cloudinary</groupId>
+            <artifactId>cloudinary-http44</artifactId>
+            <version>1.36.0</version>
         </dependency>
     </dependencies>
     

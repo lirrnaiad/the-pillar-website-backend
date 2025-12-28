@@ -32,8 +32,7 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "roles")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

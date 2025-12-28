@@ -123,6 +123,13 @@ public class AuditLog {
     @Column(name = "user_agent", columnDefinition = "TEXT")
     private String userAgent;
 
+    /**
+     * Optional note or description for the audit entry.
+     * Provides additional context about why the action was performed.
+     */
+    @Column(name = "note", columnDefinition = "TEXT")
+    private String note;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

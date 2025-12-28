@@ -186,6 +186,7 @@ CREATE TABLE audit_logs (
     new_value JSONB,
     ip_address VARCHAR(45),
     user_agent TEXT,
+    note TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
 

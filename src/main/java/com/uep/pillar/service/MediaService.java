@@ -5,7 +5,8 @@ import com.uep.pillar.model.Media;
 import com.uep.pillar.model.User;
 import com.uep.pillar.model.enums.MediaType;
 import com.uep.pillar.repository.MediaRepository;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -14,10 +15,17 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
+@Slf4j
 public class MediaService {
 
     private final MediaRepository mediaRepository;
+    private final CloudStorageService cloudStorageService;
+
+    public MediaService(MediaRepository mediaRepository, 
+                       @Autowired(required = false) CloudStorageService cloudStorageService) {
+        this.mediaRepository = mediaRepository;
+        this.cloudStorageService = cloudStorageService;
+    }
 
     @Transactional(readOnly = true)
     public Media findById(Long id) {
@@ -82,6 +90,15 @@ public class MediaService {
     @Transactional
     public void delete(Long id) {
         Media existing = findById(id);
+        // Attempt to delete from Cloudinary first, if available
+        if (cloudStorageService != null && existing.getPublicId() != null && !existing.getPublicId().trim().isEmpty()) {
+            try {
+                cloudStorageService.deleteFile(existing.getPublicId());
+            } catch (Exception e) {
+                // Log and continue with DB deletion
+                log.warn("Failed to delete Cloudinary asset publicId={}: {}", existing.getPublicId(), e.getMessage());
+            }
+        }
         mediaRepository.delete(existing);
     }
 

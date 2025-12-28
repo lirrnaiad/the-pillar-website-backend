@@ -16,5 +16,5 @@ public class CreateUserInput {
     private String lastName;
     private String avatarUrl;
     private String bio;
-    private String roleId;
+    private Integer roleId;
 }
