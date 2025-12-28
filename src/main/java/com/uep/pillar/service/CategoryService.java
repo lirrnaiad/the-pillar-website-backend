@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -28,6 +29,11 @@ public class CategoryService {
     @Transactional(readOnly = true)
     public Optional<Category> findBySlug(String slug) {
         return categoryRepository.findBySlug(slug);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Category> findAll() {
+        return categoryRepository.findAll();
     }
 
     @Transactional
