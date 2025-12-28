@@ -37,30 +37,31 @@ public class AuthService {
      * @param email user email
      * @param password user password
      * @return authentication response with token
-     * @throws BadCredentialsException if credentials are invalid
+     * @throws BadCredentialsException if credentials are invalid or user is soft-deleted
      */
     @Transactional(readOnly = true)
     public AuthResponse login(String email, String password) {
-        try {
-            authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(email, password)
-            );
+        authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(email, password)
+        );
 
-            User user = userService.findByEmail(email)
-                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+        User user = userService.findByEmail(email)
+            .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
 
-            String token = jwtTokenProvider.generateToken(user);
-
-            return AuthResponse.builder()
-                    .token(token)
-                    .user(user)
-                    .expiresIn(jwtExpiration)
-                    .tokenType("Bearer")
-                    .build();
-        } catch (org.springframework.security.core.AuthenticationException e) {
-            log.warn("Login attempt failed for email: {}", email);
-            throw new BadCredentialsException("Invalid email or password");
+        // Check if user account has been soft-deleted
+        if (user.getDeletedAt() != null) {
+            log.warn("Login attempt for soft-deleted user: {}", email);
+            throw new BadCredentialsException("Invalid credentials");
         }
+
+        String token = jwtTokenProvider.generateToken(user);
+
+        return AuthResponse.builder()
+                .token(token)
+                .user(user)
+                .expiresIn(jwtExpiration / 1000) // Convert to seconds (OAuth 2.0 convention)
+                .tokenType("Bearer")
+                .build();
     }
 
     /**
@@ -92,7 +93,7 @@ public class AuthService {
         return AuthResponse.builder()
                 .token(token)
                 .user(user)
-                .expiresIn(jwtExpiration)
+                .expiresIn(jwtExpiration / 1000) // Convert to seconds (OAuth 2.0 convention)
                 .tokenType("Bearer")
                 .build();
     }
@@ -102,7 +103,7 @@ public class AuthService {
      *
      * @param token existing JWT token
      * @return authentication response with new token
-     * @throws IllegalArgumentException if token is invalid or expired
+     * @throws IllegalArgumentException if token is invalid, expired, or user account is deleted
      */
     @Transactional(readOnly = true)
     public AuthResponse refreshToken(String token) {
@@ -113,12 +114,18 @@ public class AuthService {
         Long userId = jwtTokenProvider.getUserIdFromToken(token);
         User user = userService.findById(userId);
 
+        // Check if user account has been soft-deleted
+        if (user.getDeletedAt() != null) {
+            log.warn("Token refresh attempt for soft-deleted user ID: {}", userId);
+            throw new IllegalArgumentException("Invalid or expired token");
+        }
+
         String newToken = jwtTokenProvider.generateToken(user);
 
         return AuthResponse.builder()
                 .token(newToken)
                 .user(user)
-                .expiresIn(jwtExpiration)
+                .expiresIn(jwtExpiration / 1000) // Convert to seconds (OAuth 2.0 convention)
                 .tokenType("Bearer")
                 .build();
     }

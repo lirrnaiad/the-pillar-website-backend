@@ -31,7 +31,12 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                     // Convert role to Spring Security authorities
                     List<SimpleGrantedAuthority> authorities = new ArrayList<>();
                     if (user.getRole() != null) {
-                        // Format: ROLE_ADMIN, ROLE_EDITOR, etc.
+                        // NOTE: Role formatting differences across components:
+                        // - Spring Security expects role-based GrantedAuthority values to be prefixed with "ROLE_"
+                        //   (e.g., ROLE_ADMIN, ROLE_EDITOR), so we add the prefix here.
+                        // - JwtTokenProvider.generateToken stores the role in JWT claims *without* the "ROLE_" prefix
+                        //   (e.g., just "ADMIN", "EDITOR" from Role.getName()).
+                        // - When consuming JWT claims, ensure proper prefix handling when mapping to Spring Security authorities.
                         String roleName = "ROLE_" + user.getRole().getName();
                         authorities.add(new SimpleGrantedAuthority(roleName));
                     }

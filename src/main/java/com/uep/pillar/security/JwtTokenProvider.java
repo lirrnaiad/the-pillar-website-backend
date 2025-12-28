@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
@@ -31,6 +32,19 @@ public class JwtTokenProvider {
     @Value("${jwt.expiration}")
     private long jwtExpirationMs;
 
+    @PostConstruct
+    public void validateSecretKey() {
+        byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+        if (keyBytes.length < 32) {
+            throw new IllegalStateException(
+                "JWT secret key must be at least 32 bytes (256 bits) for HS256 algorithm. " +
+                "Current key length: " + keyBytes.length + " bytes. " +
+                "Please configure a stronger secret in application.properties"
+            );
+        }
+        log.info("JWT secret key validation successful ({} bytes)", keyBytes.length);
+    }
+
     /**
      * Generate JWT token from User entity.
      *
@@ -42,17 +56,6 @@ public class JwtTokenProvider {
         claims.put("userId", user.getId());
         claims.put("role", user.getRole() != null ? user.getRole().getName() : "UNKNOWN");
         return createToken(claims, user.getEmail());
-    }
-
-    /**
-     * Generate JWT token from UserDetails.
-     *
-     * @param userDetails the user details
-     * @return JWT token string
-     */
-    public String generateToken(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, userDetails.getUsername());
     }
 
     /**
@@ -126,7 +129,7 @@ public class JwtTokenProvider {
                     .verifyWith(getSigningKey())
                     .build()
                     .parseSignedClaims(token);
-            return !isTokenExpired(token);
+            return true;
         } catch (Exception e) {
             log.error("JWT token validation error: {}", e.getMessage());
             return false;
