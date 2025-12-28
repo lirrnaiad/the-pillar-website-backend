@@ -47,17 +47,7 @@ public class MediaUploadController {
             @RequestParam(value = "altText", required = false) String altText,
             @RequestParam(value = "folder", required = false) String folder
     ) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ErrorResponse.builder()
-                            .error("Unauthorized")
-                            .message("Authentication required")
-                            .timestamp(LocalDateTime.now())
-                            .status(HttpStatus.UNAUTHORIZED.value())
-                            .build());
-        }
-        String email = auth.getName();
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User uploader = userService.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email=" + email));
 
@@ -95,11 +85,11 @@ public class MediaUploadController {
                             .status(HttpStatus.BAD_REQUEST.value())
                             .build());
         } catch (StorageException e) {
-            log.error("Storage error during upload: {}", e.getMessage());
+            log.error("Storage error during upload", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ErrorResponse.builder()
                             .error("Internal Server Error")
-                            .message("Upload failed")
+                            .message("Failed to upload file to cloud storage. Please try again later.")
                             .timestamp(LocalDateTime.now())
                             .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                             .build());
@@ -109,18 +99,7 @@ public class MediaUploadController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
     public ResponseEntity<?> delete(@PathVariable("id") Long id) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ErrorResponse.builder()
-                            .error("Unauthorized")
-                            .message("Authentication required")
-                            .timestamp(LocalDateTime.now())
-                            .status(HttpStatus.UNAUTHORIZED.value())
-                            .build());
-        }
-        
-        String email = auth.getName();
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userService.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email=" + email));
         
@@ -142,14 +121,6 @@ public class MediaUploadController {
                             .build());
         }
         
-        try {
-            if (media.getPublicId() != null && !media.getPublicId().isBlank()) {
-                cloudStorageService.deleteFile(media.getPublicId());
-            }
-        } catch (StorageException e) {
-            log.warn("Cloudinary delete failed for publicId={}: {}", media.getPublicId(), e.getMessage());
-            // Proceed with DB deletion regardless
-        }
         mediaService.delete(id);
         return ResponseEntity.noContent().build();
     }

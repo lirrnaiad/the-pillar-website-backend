@@ -52,13 +52,18 @@ public class ArticleRevisionService {
 
     /**
      * Restore article content/title from a specific revision.
+     * Creates a new revision snapshot before applying the restore.
      * Returns the updated article.
      */
     @Transactional
-    public Article restoreFromRevision(Long revisionId) {
+    public Article restoreFromRevision(Long revisionId, User restoredBy) {
         ArticleRevision revision = articleRevisionRepository.findById(revisionId)
                 .orElseThrow(() -> new ResourceNotFoundException("ArticleRevision", revisionId));
         Article article = revision.getArticle();
+        
+        // Save current state before restoring
+        saveSnapshot(article, restoredBy, "Before restore from revision " + revisionId);
+        
         article.setTitle(revision.getTitle());
         article.setContent(revision.getContent());
         return articleRepository.save(article);

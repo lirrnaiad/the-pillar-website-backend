@@ -48,6 +48,13 @@ public class CloudinaryConfig {
         return new Cloudinary(config);
     }
 
+    /**
+     * Exposes the configured default Cloudinary folder so that other components
+     * (e.g. upload services) can determine where to store files when no folder
+     * is specified explicitly.
+     *
+     * @return the default upload folder configured via {@code cloudinary.folder}
+     */
     public String getDefaultFolder() {
         return defaultFolder;
     }
