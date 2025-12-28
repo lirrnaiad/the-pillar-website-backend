@@ -276,7 +276,7 @@ public class ArticleMutationResolver extends BaseMutationResolver {
      * @param ogImage the OG image URL (optional)
      */
     private void applyMetadataFields(Article article, String coverId, 
-                                     String metaTitle, String metaDescription, String ogImage) {
+                                        String metaTitle, String metaDescription, String ogImage) {
         // Set cover image if provided
         if (coverId != null) {
             Long coverMediaId = parseLongId(coverId, "Cover ID");

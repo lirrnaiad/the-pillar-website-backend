@@ -22,9 +22,9 @@ import java.util.Objects;
     @Index(name = "idx_users_deleted_at", columnList = "deleted_at")
 })
 @SQLRestriction("deleted_at IS NULL")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class User {
 
@@ -79,26 +79,6 @@ public class User {
      */
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
-
-    /**
-     * All-args constructor for Builder pattern.
-     * Note: Custom all-args constructor is used instead of @AllArgsConstructor for compatibility with the @Builder pattern and JPA.
-     */
-    public User(Long id, String email, String password, String firstName, String lastName,
-                String avatarUrl, String bio, Role role, LocalDateTime createdAt,
-                LocalDateTime updatedAt, LocalDateTime deletedAt) {
-        this.id = id;
-        this.email = email;
-        this.password = password;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.avatarUrl = avatarUrl;
-        this.bio = bio;
-        this.role = role;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.deletedAt = deletedAt;
-    }
 
     /**
      * Check if the user is soft-deleted.

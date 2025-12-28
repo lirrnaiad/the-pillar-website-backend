@@ -14,8 +14,7 @@ import java.util.Objects;
 @Table(name = "publication_issues", indexes = {
     @Index(name = "idx_publication_issues_slug", columnList = "slug")
 })
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

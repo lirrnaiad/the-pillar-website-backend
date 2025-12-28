@@ -33,9 +33,8 @@ public class UserMutationResolver extends BaseMutationResolver {
         // Fetch role if provided
         Role role = null;
         if (input.getRoleId() != null) {
-            Integer roleId = parseIntegerId(input.getRoleId(), "Role ID");
-            role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new IllegalArgumentException("Role not found with ID: " + roleId));
+            role = roleRepository.findById(input.getRoleId())
+                .orElseThrow(() -> new IllegalArgumentException("Role not found with ID: " + input.getRoleId()));
         }
 
         // Build user with raw password (service will hash it)
@@ -64,9 +63,8 @@ public class UserMutationResolver extends BaseMutationResolver {
         // Fetch role if provided
         Role role = null;
         if (input.getRoleId() != null) {
-            Integer roleId = parseIntegerId(input.getRoleId(), "Role ID");
-            role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new IllegalArgumentException("Role not found with ID: " + roleId));
+            role = roleRepository.findById(input.getRoleId())
+                .orElseThrow(() -> new IllegalArgumentException("Role not found with ID: " + input.getRoleId()));
         }
 
         // Use updateWithEmail if email is changing

@@ -17,8 +17,7 @@ import java.util.Objects;
     @Index(name = "idx_media_uploaded_by", columnList = "uploaded_by"),
     @Index(name = "idx_media_type", columnList = "type")
 })
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
