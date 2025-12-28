@@ -84,9 +84,13 @@ public class CloudStorageService {
     /**
      * Delete a file from Cloudinary by public ID.
      * Attempts for image, then video, then raw.
+     * Logs a warning if the file doesn't exist instead of throwing an exception.
      */
     public void deleteFile(String publicId) {
         if (publicId == null || publicId.isBlank()) return;
+        boolean foundAndDeleted = false;
+        boolean allNotFound = true;
+        
         for (String resourceType : List.of("image", "video", "raw")) {
             try {
                 @SuppressWarnings("unchecked")
@@ -94,17 +98,25 @@ public class CloudStorageService {
                 Map<?, ?> res = cloudinary.uploader().destroy(publicId, options);
                 Object result = res.get("result");
                 if (Objects.equals(result, "ok")) {
+                    foundAndDeleted = true;
                     return;
                 }
                 // If not found, try next resource type
-                if (Objects.equals(result, "not found")) {
-                    continue;
+                if (!Objects.equals(result, "not found")) {
+                    allNotFound = false;
                 }
             } catch (Exception e) {
+                allNotFound = false;
                 // Log and continue; if all fail, throw
                 log.warn("Cloudinary delete failed for resource_type={} publicId={}: {}", resourceType, publicId, e.getMessage());
             }
         }
+        
+        if (allNotFound) {
+            log.warn("Cloudinary asset not found: publicId={}", publicId);
+            return;
+        }
+        
         throw new StorageException("Failed to delete Cloudinary asset with publicId=" + publicId);
     }
 
@@ -154,30 +166,42 @@ public class CloudStorageService {
         String extension = extractExtension(originalFilename);
         String contentType = Optional.ofNullable(file.getContentType()).orElse("");
 
-        switch (type) {
-            case IMAGE -> {
-                long max = 10 * 1024 * 1024L; // 10MB
-                if (file.getSize() > max) throw new IllegalArgumentException("Image file too large (max 10MB)");
-                Set<String> allowedExt = Set.of("jpg", "jpeg", "png", "gif", "webp");
-                Set<String> allowedMime = Set.of("image/jpeg", "image/png", "image/gif", "image/webp");
-                validateType(extension, contentType, allowedExt, allowedMime);
-            }
-            case VIDEO -> {
-                long max = 50 * 1024 * 1024L; // 50MB
-                if (file.getSize() > max) throw new IllegalArgumentException("Video file too large (max 50MB)");
-                Set<String> allowedExt = Set.of("mp4", "webm");
-                Set<String> allowedMime = Set.of("video/mp4", "video/webm");
-                validateType(extension, contentType, allowedExt, allowedMime);
-            }
-            case DOCUMENT -> {
-                long max = 5 * 1024 * 1024L; // 5MB
-                if (file.getSize() > max) throw new IllegalArgumentException("Document file too large (max 5MB)");
-                Set<String> allowedExt = Set.of("pdf", "doc", "docx");
-                Set<String> allowedMime = Set.of("application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-                validateType(extension, contentType, allowedExt, allowedMime);
-            }
+        FileValidationRule rule = getValidationRule(type);
+        if (file.getSize() > rule.maxSize) {
+            throw new IllegalArgumentException(rule.sizeErrorMessage);
         }
+        validateType(extension, contentType, rule.allowedExtensions, rule.allowedMimeTypes);
     }
+
+    private FileValidationRule getValidationRule(MediaType type) {
+        return switch (type) {
+            case IMAGE -> new FileValidationRule(
+                    10 * 1024 * 1024L,
+                    "Image file too large (max 10MB)",
+                    Set.of("jpg", "jpeg", "png", "gif", "webp"),
+                    Set.of("image/jpeg", "image/png", "image/gif", "image/webp")
+            );
+            case VIDEO -> new FileValidationRule(
+                    50 * 1024 * 1024L,
+                    "Video file too large (max 50MB)",
+                    Set.of("mp4", "webm"),
+                    Set.of("video/mp4", "video/webm")
+            );
+            case DOCUMENT -> new FileValidationRule(
+                    5 * 1024 * 1024L,
+                    "Document file too large (max 5MB)",
+                    Set.of("pdf", "doc", "docx"),
+                    Set.of("application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+            );
+        };
+    }
+
+    private record FileValidationRule(
+            long maxSize,
+            String sizeErrorMessage,
+            Set<String> allowedExtensions,
+            Set<String> allowedMimeTypes
+    ) {}
 
     private void validateType(String extension, String contentType, Set<String> allowedExt, Set<String> allowedMime) {
         if (!allowedExt.contains(extension.toLowerCase())) {
@@ -189,8 +213,7 @@ public class CloudStorageService {
     }
 
     private String extractExtension(String filename) {
-        int idx = filename.lastIndexOf('.')
-                ;
+        int idx = filename.lastIndexOf('.');
         if (idx < 0 || idx == filename.length() - 1) return "";
         return filename.substring(idx + 1);
     }

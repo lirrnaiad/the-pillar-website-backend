@@ -5,7 +5,6 @@ import com.uep.pillar.model.Media;
 import com.uep.pillar.model.User;
 import com.uep.pillar.model.enums.MediaType;
 import com.uep.pillar.repository.MediaRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -16,16 +15,17 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class MediaService {
 
     private final MediaRepository mediaRepository;
-    /**
-     * Optional Cloud storage service for deleting assets from Cloudinary before DB deletion.
-     */
-    @Autowired(required = false)
-    private CloudStorageService cloudStorageService;
+    private final CloudStorageService cloudStorageService;
+
+    public MediaService(MediaRepository mediaRepository, 
+                       @Autowired(required = false) CloudStorageService cloudStorageService) {
+        this.mediaRepository = mediaRepository;
+        this.cloudStorageService = cloudStorageService;
+    }
 
     @Transactional(readOnly = true)
     public Media findById(Long id) {

@@ -3,6 +3,7 @@ package com.uep.pillar.config;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -32,6 +33,7 @@ public class CloudinaryConfig {
     private String defaultFolder;
 
     @Bean
+    @ConditionalOnProperty(name = "cloudinary.cloud-name")
     public Cloudinary cloudinary() {
         if (isBlank(cloudName) || isBlank(apiKey) || isBlank(apiSecret)) {
             throw new IllegalStateException("Cloudinary credentials are missing. Please set cloudinary.cloud-name, cloudinary.api-key, and cloudinary.api-secret.");
