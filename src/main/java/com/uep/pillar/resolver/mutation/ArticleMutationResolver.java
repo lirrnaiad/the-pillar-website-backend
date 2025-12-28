@@ -68,28 +68,34 @@ public class ArticleMutationResolver extends BaseMutationResolver {
             input.getSlug()
         );
 
+        // Track if we need to save metadata changes
+        boolean needsSave = false;
+
         // Set cover image if provided
         if (input.getCoverId() != null) {
             Long coverId = parseLongId(input.getCoverId(), "Cover ID");
             Media cover = mediaRepository.findById(coverId)
                 .orElseThrow(() -> new IllegalArgumentException("Cover media not found: " + coverId));
             article.setCover(cover);
+            needsSave = true;
         }
 
         // Set metadata fields if provided
         if (input.getMetaTitle() != null) {
             article.setMetaTitle(input.getMetaTitle());
+            needsSave = true;
         }
         if (input.getMetaDescription() != null) {
             article.setMetaDescription(input.getMetaDescription());
+            needsSave = true;
         }
         if (input.getOgImage() != null) {
             article.setOgImage(input.getOgImage());
+            needsSave = true;
         }
 
         // Save changes if any metadata was set
-        if (input.getCoverId() != null || input.getMetaTitle() != null 
-            || input.getMetaDescription() != null || input.getOgImage() != null) {
+        if (needsSave) {
             article = articleRepository.save(article);
         }
 
@@ -146,28 +152,34 @@ public class ArticleMutationResolver extends BaseMutationResolver {
             input.getSlug()
         );
 
+        // Track if we need to save metadata changes
+        boolean needsSave = false;
+
         // Set cover image if provided
         if (input.getCoverId() != null) {
             Long coverId = parseLongId(input.getCoverId(), "Cover ID");
             Media cover = mediaRepository.findById(coverId)
                 .orElseThrow(() -> new IllegalArgumentException("Cover media not found: " + coverId));
             article.setCover(cover);
+            needsSave = true;
         }
 
         // Set metadata fields if provided
         if (input.getMetaTitle() != null) {
             article.setMetaTitle(input.getMetaTitle());
+            needsSave = true;
         }
         if (input.getMetaDescription() != null) {
             article.setMetaDescription(input.getMetaDescription());
+            needsSave = true;
         }
         if (input.getOgImage() != null) {
             article.setOgImage(input.getOgImage());
+            needsSave = true;
         }
 
         // Save changes if any metadata was set
-        if (input.getCoverId() != null || input.getMetaTitle() != null 
-            || input.getMetaDescription() != null || input.getOgImage() != null) {
+        if (needsSave) {
             article = articleRepository.save(article);
         }
 
