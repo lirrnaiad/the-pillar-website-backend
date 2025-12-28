@@ -34,6 +34,28 @@ public class MediaService {
     public Media saveMetadata(String url, String publicId, String altText,
                               MediaType type, Long sizeBytes, Integer width, Integer height,
                               User uploadedBy) {
+        // Validate required fields
+        if (publicId == null || publicId.trim().isEmpty()) {
+            throw new IllegalArgumentException("publicId is required");
+        }
+        if (url == null || url.trim().isEmpty()) {
+            throw new IllegalArgumentException("url is required");
+        }
+        if (type == null) {
+            throw new IllegalArgumentException("type is required");
+        }
+        
+        // Validate logical constraints
+        if (sizeBytes != null && sizeBytes < 0) {
+            throw new IllegalArgumentException("sizeBytes must be non-negative");
+        }
+        if (width != null && width <= 0) {
+            throw new IllegalArgumentException("width must be positive");
+        }
+        if (height != null && height <= 0) {
+            throw new IllegalArgumentException("height must be positive");
+        }
+        
         Media media = Media.builder()
                 .url(url)
                 .publicId(publicId)
