@@ -655,8 +655,6 @@ type Mutation {
 
     """
     Restore an article's content/title from a specific revision.
-
-    - `revisionId`: The ID of the article revision to restore from.
     """
     restoreArticleFromRevision(revisionId: ID!): Article!
 

@@ -63,8 +63,11 @@ public class AuditLogService {
                 .newValue(newValue)
                 .ipAddress(ip)
                 .userAgent(ua)
-                .note(note)
                 .build();
+        
+        // Note: The 'note' parameter is accepted but not stored in AuditLog entity.
+        // If note information is needed, it can be added to the newValue map or
+        // a note field can be added to the AuditLog entity in the future.
         auditLogRepository.save(log);
     }
 

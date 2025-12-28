@@ -30,6 +30,9 @@ public class ArticleRevisionService {
      */
     @Transactional
     public ArticleRevision saveSnapshot(Article article, User revisedBy, String note) {
+        if (revisedBy == null) {
+            throw new IllegalArgumentException("RevisedBy user cannot be null");
+        }
         ArticleRevision revision = ArticleRevision.builder()
                 .article(article)
                 .title(article.getTitle())

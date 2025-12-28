@@ -97,6 +97,7 @@ public class UserMutationResolver extends BaseMutationResolver {
 
     /**
      * Change user password.
+     * Users can only change their own password, or admins can change any password.
      *
      * @param id the user ID
      * @param oldPassword the current password (for validation)
@@ -105,11 +106,26 @@ public class UserMutationResolver extends BaseMutationResolver {
      */
     public Boolean changePassword(String id, String oldPassword, String newPassword) {
         Long userId = parseLongId(id, "User ID");
+        User currentUser = getCurrentUser();
         
-        // Validate old password
-        User user = this.userService.findById(userId);
-        if (!this.userService.validatePassword(oldPassword, user.getPassword())) {
-            throw new IllegalArgumentException("Current password is incorrect");
+        if (currentUser == null) {
+            throw new com.uep.pillar.exception.UnauthorizedException("Authentication required");
+        }
+        
+        // Authorization: Users can only change their own password, or admins can change any password
+        boolean isAdmin = currentUser.getRole() != null && "ADMIN".equals(currentUser.getRole().getName());
+        boolean isOwnPassword = currentUser.getId().equals(userId);
+        
+        if (!isOwnPassword && !isAdmin) {
+            throw new com.uep.pillar.exception.UnauthorizedException("You can only change your own password");
+        }
+        
+        // Validate old password (only required when changing own password)
+        if (isOwnPassword) {
+            User user = this.userService.findById(userId);
+            if (!this.userService.validatePassword(oldPassword, user.getPassword())) {
+                throw new IllegalArgumentException("Current password is incorrect");
+            }
         }
 
         // Change to new password

@@ -81,8 +81,13 @@ public class ArticleMutationResolver extends BaseMutationResolver {
         );
 
         // Apply metadata fields (article is managed, changes will be persisted)
-        applyMetadataFields(article, input.getCoverId(), input.getMetaTitle(), 
+        boolean metadataChanged = applyMetadataFields(article, input.getCoverId(), input.getMetaTitle(), 
                            input.getMetaDescription(), input.getOgImage());
+        
+        // Persist metadata changes if any were made
+        if (metadataChanged) {
+            article = articleService.saveMetadata(article);
+        }
 
         // Handle initial status if not DRAFT
         if (input.getStatus() != null && input.getStatus() != com.uep.pillar.model.enums.ArticleStatus.DRAFT) {
@@ -105,6 +110,7 @@ public class ArticleMutationResolver extends BaseMutationResolver {
 
     /**
      * Update an existing article.
+     * Authorization: WRITERs can only edit their own articles. EDITORs and ADMINs can edit any article.
      *
      * @param input article update input
      * @return the updated article
@@ -113,9 +119,24 @@ public class ArticleMutationResolver extends BaseMutationResolver {
     public Article updateArticle(UpdateArticleInput input) {
         Long id = parseLongId(input.getId(), "Article ID");
 
-        // Save a revision snapshot of the current state before applying updates
+        // Get current user and article
         User editor = getCurrentUser();
+        if (editor == null) {
+            throw new IllegalStateException("Authentication required to update article");
+        }
+        
         Article current = articleService.findById(id);
+        
+        // Authorization check: WRITERs can only edit their own articles
+        boolean isAdmin = editor.getRole() != null && "ADMIN".equals(editor.getRole().getName());
+        boolean isEditor = editor.getRole() != null && "EDITOR".equals(editor.getRole().getName());
+        boolean isOwner = current.getAuthor() != null && current.getAuthor().getId().equals(editor.getId());
+        
+        if (!isAdmin && !isEditor && !isOwner) {
+            throw new com.uep.pillar.exception.UnauthorizedException("You can only edit your own articles");
+        }
+
+        // Save a revision snapshot of the current state before applying updates
         articleRevisionService.saveSnapshot(current, editor, null);
 
         // Parse optional IDs
@@ -143,9 +164,14 @@ public class ArticleMutationResolver extends BaseMutationResolver {
             input.getSlug()
         );
 
-        // Apply metadata fields (article is managed, changes will be persisted by subsequent service calls)
-        applyMetadataFields(article, input.getCoverId(), input.getMetaTitle(), 
+        // Apply metadata fields and persist changes
+        boolean metadataChanged = applyMetadataFields(article, input.getCoverId(), input.getMetaTitle(), 
                            input.getMetaDescription(), input.getOgImage());
+        
+        // Persist metadata changes if any were made
+        if (metadataChanged) {
+            article = articleService.saveMetadata(article);
+        }
 
         // Handle featured flag
         if (input.getFeatured() != null && input.getFeatured() != article.isFeatured()) {
@@ -294,26 +320,37 @@ public class ArticleMutationResolver extends BaseMutationResolver {
      * @param metaTitle the meta title (optional)
      * @param metaDescription the meta description (optional)
      * @param ogImage the OG image URL (optional)
+     * @return true if any metadata fields were changed
      */
-    private void applyMetadataFields(Article article, String coverId, 
+    private boolean applyMetadataFields(Article article, String coverId, 
                                         String metaTitle, String metaDescription, String ogImage) {
+        boolean changed = false;
+        
         // Set cover image if provided
         if (coverId != null) {
             Long coverMediaId = parseLongId(coverId, "Cover ID");
             Media cover = mediaService.findById(coverMediaId);
-            article.setCover(cover);
+            if (article.getCover() == null || !article.getCover().getId().equals(cover.getId())) {
+                article.setCover(cover);
+                changed = true;
+            }
         }
 
         // Set metadata fields if provided
-        if (metaTitle != null) {
+        if (metaTitle != null && !metaTitle.equals(article.getMetaTitle())) {
             article.setMetaTitle(metaTitle);
+            changed = true;
         }
-        if (metaDescription != null) {
+        if (metaDescription != null && !metaDescription.equals(article.getMetaDescription())) {
             article.setMetaDescription(metaDescription);
+            changed = true;
         }
-        if (ogImage != null) {
+        if (ogImage != null && !ogImage.equals(article.getOgImage())) {
             article.setOgImage(ogImage);
+            changed = true;
         }
+        
+        return changed;
     }
 
     /**

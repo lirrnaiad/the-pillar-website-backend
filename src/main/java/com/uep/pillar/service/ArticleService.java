@@ -378,4 +378,16 @@ public class ArticleService {
 
         return articleRepository.findAll(pageable);
     }
+
+    /**
+     * Save article metadata (cover, metaTitle, metaDescription, ogImage).
+     * Used when only metadata fields need to be persisted.
+     *
+     * @param article the article with updated metadata
+     * @return the saved article
+     */
+    @Transactional
+    public Article saveMetadata(Article article) {
+        return articleRepository.save(article);
+    }
 }

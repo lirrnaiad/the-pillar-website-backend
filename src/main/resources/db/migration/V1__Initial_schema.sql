@@ -2,19 +2,8 @@
 -- The Pillar E-Publication Website Database Schema
 -- Version: 1.0.0
 -- Database: PostgreSQL
+-- Flyway Migration: V1
 -- ============================================
-
--- Drop tables if they exist (for clean setup)
-DROP TABLE IF EXISTS audit_logs CASCADE;
-DROP TABLE IF EXISTS article_revisions CASCADE;
-DROP TABLE IF EXISTS article_tags CASCADE;
-DROP TABLE IF EXISTS tags CASCADE;
-DROP TABLE IF EXISTS articles CASCADE;
-DROP TABLE IF EXISTS media CASCADE;
-DROP TABLE IF EXISTS publication_issues CASCADE;
-DROP TABLE IF EXISTS categories CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS roles CASCADE;
 
 -- ============================================
 -- ROLES TABLE
@@ -84,7 +73,7 @@ CREATE TABLE media (
     id BIGSERIAL PRIMARY KEY,
     url TEXT NOT NULL,
     public_id VARCHAR(255), -- Cloudinary public ID
-    alt_text VARCHAR(255),
+    alt_text TEXT, -- Changed to TEXT for accessibility
     type VARCHAR(50) NOT NULL, -- IMAGE, VIDEO, DOCUMENT
     size_bytes BIGINT,
     width INT,
@@ -281,21 +270,4 @@ INSERT INTO categories (name, slug, description, color) VALUES
 ('Cartoons', 'cartoons', 'Cartoons and comics', '#FDD835'),
 ('Videos', 'videos', 'Video content', '#00ACC1'),
 ('Editorial', 'editorial', 'Editorial board articles', '#6D4C41');
-
--- ============================================
--- OPTIONAL: CREATE DEFAULT ADMIN USER
--- Password: 'admin123' (BCrypt hashed)
--- ============================================
--- INSERT INTO users (email, password, first_name, last_name, role_id) VALUES
--- ('admin@uep.edu.ph', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iKXKQRriFbPUL6nh0nOFvNQIFQ6e', 'Admin', 'User', 1);
-
--- ============================================
--- GRANT STATEMENTS (adjust based on your setup)
--- ============================================
--- GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO your_user;
--- GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO your_user;
-
--- ============================================
--- END OF SCHEMA
--- ============================================
 

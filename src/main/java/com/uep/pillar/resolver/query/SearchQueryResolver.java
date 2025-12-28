@@ -4,7 +4,6 @@ import com.uep.pillar.dto.ArticleEdge;
 import com.uep.pillar.dto.ArticlesConnection;
 import com.uep.pillar.dto.PageInfo;
 import com.uep.pillar.model.Article;
-import com.uep.pillar.service.ArticleService;
 import com.uep.pillar.service.SearchService;
 import com.uep.pillar.dto.SearchHighlight;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +23,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SearchQueryResolver {
 
-    private final ArticleService articleService;
     private final SearchService searchService;
 
     /**

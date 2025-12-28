@@ -35,11 +35,16 @@ import java.util.Set;
 @SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Article {
-
-    public Article() {
-        this.tags = new HashSet<>();
+    
+    {
+        // Instance initializer to ensure tags is never null
+        if (this.tags == null) {
+            this.tags = new HashSet<>();
+        }
     }
 
     @Id
@@ -181,7 +186,8 @@ public class Article {
     private LocalDateTime deletedAt;
 
     /**
-     * Builder constructor with defaults.
+     * All-args constructor with defaults for builder compatibility.
+     * Note: This constructor is used by Lombok's @Builder.
      */
     public Article(Long id, String title, String slug, String content, String excerpt,
                    ArticleStatus status, boolean featured, Long viewCount,
