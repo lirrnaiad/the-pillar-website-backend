@@ -231,6 +231,12 @@ public class ArticleQueryResolver {
 
     /**
      * Build ArticlesConnection from Page result.
+     * 
+     * Note on cursor pagination:
+     * - Each edge has a unique cursor based on article ID (for identification)
+     * - PageInfo.endCursor contains the cursor for fetching the next page (page-based)
+     * - This hybrid approach provides unique identifiers per article while using
+     *   simpler page-based pagination for navigation
      */
     private ArticlesConnection buildConnection(Page<Article> articlePage, int currentPage) {
         List<ArticleEdge> edges = articlePage.getContent().stream()
@@ -247,19 +253,20 @@ public class ArticleQueryResolver {
                 .collect(Collectors.toList());
 
         // Build page info
+        // startCursor: cursor of first edge (article ID based)
         String startCursor = edges.isEmpty() ? null : edges.get(0).getCursor();
-        String endCursor = edges.isEmpty() ? null : edges.get(edges.size() - 1).getCursor();
-
-        // For next page cursor, encode next page number
-        String nextPageCursor = articlePage.hasNext()
+        
+        // endCursor: cursor for pagination (page-based for next page navigation)
+        // This is what clients should pass as 'after' to get the next page
+        String endCursor = articlePage.hasNext()
                 ? Base64.getEncoder().encodeToString(("page_" + (currentPage + 1)).getBytes())
-                : null;
+                : (edges.isEmpty() ? null : edges.get(edges.size() - 1).getCursor());
 
         PageInfo pageInfo = PageInfo.builder()
                 .hasNextPage(articlePage.hasNext())
                 .hasPreviousPage(articlePage.hasPrevious())
                 .startCursor(startCursor)
-                .endCursor(nextPageCursor)
+                .endCursor(endCursor)
                 .build();
 
         return ArticlesConnection.builder()

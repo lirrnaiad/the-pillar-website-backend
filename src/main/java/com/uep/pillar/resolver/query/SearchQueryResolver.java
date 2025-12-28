@@ -63,18 +63,18 @@ public class SearchQueryResolver {
 
         // Build page info
         String startCursor = edges.isEmpty() ? null : edges.get(0).getCursor();
-        String endCursor = edges.isEmpty() ? null : edges.get(edges.size() - 1).getCursor();
         
-        // For pagination, use page number cursor
-        String nextPageCursor = page.hasNext()
+        // endCursor: cursor for pagination (page-based for next page navigation)
+        // This is what clients should pass as 'after' to get the next page
+        String endCursor = page.hasNext()
                 ? Base64.getEncoder().encodeToString(("page_" + (pageNumber + 1)).getBytes())
-                : null;
+                : (edges.isEmpty() ? null : edges.get(edges.size() - 1).getCursor());
 
         PageInfo pageInfo = PageInfo.builder()
                 .hasNextPage(page.hasNext())
                 .hasPreviousPage(page.hasPrevious())
                 .startCursor(startCursor)
-                .endCursor(nextPageCursor)
+                .endCursor(endCursor)
                 .build();
 
         return ArticlesConnection.builder()

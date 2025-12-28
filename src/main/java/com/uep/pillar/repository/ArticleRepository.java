@@ -184,6 +184,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
 
     /**
      * Find published articles by publication issue.
+     * Note: This method always sorts by publishedAt DESC regardless of the Pageable's Sort specification.
      * 
      * @param issueId the publication issue ID
      * @param pageable pagination info
