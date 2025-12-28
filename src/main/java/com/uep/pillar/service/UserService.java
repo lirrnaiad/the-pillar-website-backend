@@ -20,7 +20,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^(?=.{1,64}@)(?!.*\\.\\.)[A-Za-z0-9](?:[A-Za-z0-9._%+-]*[A-Za-z0-9])?@(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\\.)+[A-Za-z]{2,}$");
+    private static final int MIN_PASSWORD_LENGTH = 8;
 
     @Transactional(readOnly = true)
     public User findById(Long id) {
@@ -35,23 +36,28 @@ public class UserService {
 
     @Transactional
     public User register(String email, String rawPassword, String firstName, String lastName, Role role) {
-        validateEmailFormat(email);
-        validateEmailUniqueness(email, null);
-        String hashedPassword = passwordEncoder.encode(rawPassword);
         User user = User.builder()
                 .email(email)
-                .password(hashedPassword)
+                .password(rawPassword)
                 .firstName(firstName)
                 .lastName(lastName)
                 .role(role)
                 .build();
-        return userRepository.save(user);
+        return createUser(user);
     }
 
     @Transactional
     public User create(User userWithRawPassword) {
+        return createUser(userWithRawPassword);
+    }
+
+    /**
+     * Common method to create a user with validation and password encoding.
+     */
+    private User createUser(User userWithRawPassword) {
         validateEmailFormat(userWithRawPassword.getEmail());
         validateEmailUniqueness(userWithRawPassword.getEmail(), null);
+        validatePasswordStrength(userWithRawPassword.getPassword());
         String hashed = passwordEncoder.encode(userWithRawPassword.getPassword());
         userWithRawPassword.setPassword(hashed);
         return userRepository.save(userWithRawPassword);
@@ -92,6 +98,7 @@ public class UserService {
     @Transactional
     public void changePassword(Long id, String rawPassword) {
         User existing = findById(id);
+        validatePasswordStrength(rawPassword);
         existing.setPassword(passwordEncoder.encode(rawPassword));
         userRepository.save(existing);
     }
@@ -116,6 +123,23 @@ public class UserService {
     private void validateEmailFormat(String email) {
         if (email == null || !EMAIL_PATTERN.matcher(email).matches()) {
             throw new IllegalArgumentException("Invalid email format");
+        }
+    }
+
+    /**
+     * Validate password strength requirements.
+     * Ensures minimum length and basic complexity.
+     */
+    private void validatePasswordStrength(String password) {
+        if (password == null || password.length() < MIN_PASSWORD_LENGTH) {
+            throw new IllegalArgumentException("Password must be at least " + MIN_PASSWORD_LENGTH + " characters long");
+        }
+        // Additional complexity checks can be added here
+        if (!password.matches(".*[A-Za-z].*")) {
+            throw new IllegalArgumentException("Password must contain at least one letter");
+        }
+        if (!password.matches(".*\\d.*")) {
+            throw new IllegalArgumentException("Password must contain at least one digit");
         }
     }
 
