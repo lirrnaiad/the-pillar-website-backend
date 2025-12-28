@@ -29,7 +29,7 @@ public class SearchQueryResolver {
      * 
      * @param query the search query string
      * @param first maximum number of results to return
-     * @param after cursor for pagination (base64 encoded article ID)
+     * @param after cursor for pagination (base64 encoded page number)
      * @return paginated articles connection
      */
     public ArticlesConnection searchArticles(String query, Integer first, String after) {
@@ -41,11 +41,9 @@ public class SearchQueryResolver {
         if (after != null && !after.isEmpty()) {
             try {
                 String decoded = new String(Base64.getDecoder().decode(after));
-                // Assuming cursor format is "article_{id}" or just the ID
-                String idStr = decoded.replace("article_", "");
-                // For simplicity, we'll use page-based pagination
-                // In a production system, you might want cursor-based pagination
-                pageNumber = Integer.parseInt(idStr) / pageSize;
+                // Extract page number from cursor (format: "page_N")
+                String pageStr = decoded.replace("page_", "");
+                pageNumber = Integer.parseInt(pageStr);
             } catch (Exception e) {
                 // Invalid cursor, start from beginning
                 pageNumber = 0;
@@ -55,7 +53,7 @@ public class SearchQueryResolver {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
         Page<Article> page = articleService.searchPublished(query, pageable);
 
-        // Convert to edges
+        // Convert to edges - each article gets a unique cursor based on its ID
         List<ArticleEdge> edges = page.getContent().stream()
                 .map(article -> ArticleEdge.builder()
                         .node(article)
@@ -64,11 +62,19 @@ public class SearchQueryResolver {
                 .collect(Collectors.toList());
 
         // Build page info
+        String startCursor = edges.isEmpty() ? null : edges.get(0).getCursor();
+        String endCursor = edges.isEmpty() ? null : edges.get(edges.size() - 1).getCursor();
+        
+        // For pagination, use page number cursor
+        String nextPageCursor = page.hasNext()
+                ? Base64.getEncoder().encodeToString(("page_" + (pageNumber + 1)).getBytes())
+                : null;
+
         PageInfo pageInfo = PageInfo.builder()
                 .hasNextPage(page.hasNext())
                 .hasPreviousPage(page.hasPrevious())
-                .startCursor(edges.isEmpty() ? null : edges.get(0).getCursor())
-                .endCursor(edges.isEmpty() ? null : edges.get(edges.size() - 1).getCursor())
+                .startCursor(startCursor)
+                .endCursor(nextPageCursor)
                 .build();
 
         return ArticlesConnection.builder()

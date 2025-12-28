@@ -57,16 +57,33 @@ public class UserQueryResolver {
             } else if (principal instanceof String) {
                 // If principal is a string (email or ID), try to find user
                 String identifier = (String) principal;
+                
+                Long userId = null;
                 try {
-                    Long userId = Long.parseLong(identifier);
-                    return userService.findById(userId);
-                } catch (NumberFormatException | com.uep.pillar.exception.ResourceNotFoundException e) {
-                    return userService.findByEmail(identifier).orElse(null);
+                    userId = Long.parseLong(identifier);
+                } catch (NumberFormatException e) {
+                    // Not a numeric ID; we'll try treating it as an email below.
                 }
+
+                if (userId != null) {
+                    try {
+                        return userService.findById(userId);
+                    } catch (com.uep.pillar.exception.ResourceNotFoundException e) {
+                        // No user found by ID; fall back to email lookup below.
+                    }
+                }
+
+                // Either identifier is not a numeric ID or user not found by ID; try email.
+                return userService.findByEmail(identifier).orElse(null);
             }
             
             return null;
+        } catch (NumberFormatException | com.uep.pillar.exception.ResourceNotFoundException e) {
+            // Expected exceptions when parsing fails or resource not found
+            return null;
         } catch (Exception e) {
+            // Log unexpected exceptions but still return null gracefully
+            // In production, consider using a logger here
             return null;
         }
     }

@@ -2,9 +2,13 @@ package com.uep.pillar.resolver.query;
 
 import com.uep.pillar.model.Article;
 import com.uep.pillar.model.PublicationIssue;
-import com.uep.pillar.repository.ArticleRepository;
+import com.uep.pillar.service.ArticleService;
 import com.uep.pillar.service.PublicationIssueService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -17,7 +21,7 @@ import java.util.List;
 public class PublicationIssueQueryResolver {
 
     private final PublicationIssueService publicationIssueService;
-    private final ArticleRepository articleRepository;
+    private final ArticleService articleService;
 
     /**
      * Get all published publication issues.
@@ -65,19 +69,11 @@ public class PublicationIssueQueryResolver {
         if (publicationIssue == null || publicationIssue.getId() == null) {
             return List.of();
         }
+        // Use a reasonable page size limit instead of Integer.MAX_VALUE
         // Return published articles for this issue, ordered by published date (newest first)
-        return articleRepository.findByIssueId(publicationIssue.getId(), 
-                org.springframework.data.domain.PageRequest.of(0, Integer.MAX_VALUE))
-                .getContent()
-                .stream()
-                .filter(article -> article.getStatus() == com.uep.pillar.model.enums.ArticleStatus.PUBLISHED)
-                .sorted((a1, a2) -> {
-                    if (a1.getPublishedAt() == null && a2.getPublishedAt() == null) return 0;
-                    if (a1.getPublishedAt() == null) return 1;
-                    if (a2.getPublishedAt() == null) return -1;
-                    return a2.getPublishedAt().compareTo(a1.getPublishedAt());
-                })
-                .toList();
+        Pageable pageable = PageRequest.of(0, 100, Sort.by(Sort.Direction.DESC, "publishedAt"));
+        Page<Article> articlePage = articleService.findPublishedByIssueId(publicationIssue.getId(), pageable);
+        return articlePage.getContent();
     }
 }
 
