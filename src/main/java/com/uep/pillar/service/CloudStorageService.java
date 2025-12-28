@@ -227,11 +227,11 @@ public class CloudStorageService {
 
     private String extractExtension(String filename) {
         if (filename == null || filename.isBlank()) {
-            throw new IllegalArgumentException("Filename must not be null or empty");
+            throw new IllegalArgumentException("Filename must not be null or blank");
         }
         int idx = filename.lastIndexOf('.');
         if (idx < 0 || idx == filename.length() - 1) {
-            throw new IllegalArgumentException("Filename must have a valid extension: " + filename);
+            throw new IllegalArgumentException("Filename must have a valid extension");
         }
         return filename.substring(idx + 1);
     }
