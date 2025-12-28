@@ -37,6 +37,19 @@ public class PublicationIssueService {
         return publicationIssueRepository.save(issue);
     }
 
+    /**
+     * Update publication issue fields.
+     * 
+     * Note: This method uses null to mean "no change" rather than "clear the field".
+     * Passing null for a parameter will leave that field unchanged.
+     * To intentionally clear a field, pass an empty string for String fields.
+     * 
+     * @param id the ID of the publication issue to update
+     * @param title new title, or null to leave unchanged
+     * @param description new description, or null to leave unchanged
+     * @param coverUrl new cover URL, or null to leave unchanged
+     * @return the updated publication issue
+     */
     @Transactional
     public PublicationIssue update(Long id, String title, String description, String coverUrl) {
         PublicationIssue existing = findById(id);
