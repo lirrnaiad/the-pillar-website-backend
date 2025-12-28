@@ -265,4 +265,9 @@ public class ArticleService {
         for (Tag t : tags) article.removeTag(t);
         return articleRepository.save(article);
     }
+
+    @Transactional(readOnly = true)
+    public Page<Article> findPublishedByIssueId(Long issueId, Pageable pageable) {
+        return articleRepository.findPublishedByIssueId(issueId, pageable);
+    }
 }

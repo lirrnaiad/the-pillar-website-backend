@@ -182,6 +182,20 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      */
     Page<Article> findByIssueId(Long issueId, Pageable pageable);
 
+    /**
+     * Find published articles by publication issue.
+     * 
+     * IMPORTANT: This method ignores the Sort specification in the Pageable parameter.
+     * Articles are always sorted by publishedAt DESC (newest first).
+     * Only pagination (page number and size) from Pageable is respected.
+     * 
+     * @param issueId the publication issue ID
+     * @param pageable pagination info (only page number and size are used; sort is ignored)
+     * @return paginated list of published articles in that issue, sorted by publishedAt DESC
+     */
+    @Query("SELECT a FROM Article a WHERE a.issue.id = :issueId AND a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
+    Page<Article> findPublishedByIssueId(@Param("issueId") Long issueId, Pageable pageable);
+
     // ==================== TAGS ====================
 
     /**

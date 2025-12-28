@@ -6,9 +6,7 @@ import com.uep.pillar.dto.ArticleFilter;
 import com.uep.pillar.dto.ArticleSort;
 import com.uep.pillar.dto.PageInfo;
 import com.uep.pillar.model.Article;
-import com.uep.pillar.model.Category;
 import com.uep.pillar.service.ArticleService;
-import com.uep.pillar.service.CategoryService;
 import com.uep.pillar.repository.ArticleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,7 +17,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Base64;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -31,7 +28,6 @@ import java.util.stream.Collectors;
 public class ArticleQueryResolver {
 
     private final ArticleService articleService;
-    private final CategoryService categoryService;
     private final ArticleRepository articleRepository; // Still needed for complex queries
 
     /**
@@ -74,10 +70,13 @@ public class ArticleQueryResolver {
         int pageNumber = 0;
 
         // Decode cursor to get page number if provided
+        // Using page-based pagination for simplicity; cursor contains page number
         if (after != null && !after.isEmpty()) {
             try {
                 String decoded = new String(Base64.getDecoder().decode(after));
-                pageNumber = Integer.parseInt(decoded);
+                // Extract page number from cursor
+                String pageStr = decoded.replace("page_", "");
+                pageNumber = Integer.parseInt(pageStr);
             } catch (Exception e) {
                 // Invalid cursor, start from beginning
                 pageNumber = 0;
@@ -103,9 +102,10 @@ public class ArticleQueryResolver {
      * @param categorySlug the category slug
      * @param first number of articles to return (default: 10)
      * @param after cursor for pagination
+     * @param sort optional sort configuration
      * @return paginated articles connection
      */
-    public ArticlesConnection articlesByCategory(String categorySlug, Integer first, String after) {
+    public ArticlesConnection articlesByCategory(String categorySlug, Integer first, String after, ArticleSort sort) {
         // Default values
         int pageSize = first != null ? Math.min(first, 100) : 10;
         int pageNumber = 0;
@@ -114,28 +114,18 @@ public class ArticleQueryResolver {
         if (after != null && !after.isEmpty()) {
             try {
                 String decoded = new String(Base64.getDecoder().decode(after));
-                pageNumber = Integer.parseInt(decoded);
+                // Extract page number from cursor
+                String pageStr = decoded.replace("page_", "");
+                pageNumber = Integer.parseInt(pageStr);
             } catch (Exception e) {
                 pageNumber = 0;
             }
         }
 
-        // Find category by slug
-        Optional<Category> categoryOpt = categoryService.findBySlug(categorySlug);
-        if (categoryOpt.isEmpty()) {
-            // Return empty connection if category not found
-            return ArticlesConnection.builder()
-                    .edges(List.of())
-                    .pageInfo(PageInfo.builder()
-                            .hasNextPage(false)
-                            .hasPreviousPage(false)
-                            .build())
-                    .totalCount(0)
-                    .build();
-        }
+        // Build sort specification
+        Sort sortSpec = buildSort(sort);
 
-        Pageable pageable = PageRequest.of(pageNumber, pageSize, 
-                Sort.by(Sort.Direction.DESC, "publishedAt"));
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, sortSpec);
 
         // Query published articles by category slug
         Page<Article> articlePage = articleRepository.findPublishedByCategorySlug(
@@ -187,6 +177,9 @@ public class ArticleQueryResolver {
 
     /**
      * Build query based on filter and execute it.
+     * NOTE: Currently only supports single filter conditions. Multiple filters applied simultaneously
+     * are not yet supported and will use only the first matching condition in priority order.
+     * Priority order: status > categoryId > authorId > featured > search > issueId > tagIds
      */
     private Page<Article> buildQuery(ArticleFilter filter, Pageable pageable) {
         if (filter == null) {
@@ -194,7 +187,7 @@ public class ArticleQueryResolver {
             return articleRepository.findAll(pageable);
         }
 
-        // Filter by status
+        // Filter by status (highest priority)
         if (filter.getStatus() != null) {
             return articleRepository.findByStatus(filter.getStatus(), pageable);
         }
@@ -224,11 +217,12 @@ public class ArticleQueryResolver {
             return articleRepository.findByIssueId(filter.getIssueId(), pageable);
         }
 
-        // Filter by tags (requires custom query - simplified for now)
-        // TODO: Implement tag filtering with proper query
+        // Filter by tags - return empty result if tag filtering is requested
+        // This prevents returning all articles when tag filtering is expected
         if (filter.getTagIds() != null && !filter.getTagIds().isEmpty()) {
-            // For now, return all articles - tag filtering needs custom repository method
-            return articleRepository.findAll(pageable);
+            // Tag filtering with multiple tag IDs is not yet implemented
+            // Return empty result set to avoid confusion
+            return Page.empty(pageable);
         }
 
         // No specific filter, return all
@@ -237,12 +231,19 @@ public class ArticleQueryResolver {
 
     /**
      * Build ArticlesConnection from Page result.
+     * 
+     * Note on cursor pagination:
+     * - Each edge has a unique cursor based on article ID (for identification)
+     * - PageInfo.endCursor contains the cursor for fetching the next page (page-based)
+     * - This hybrid approach provides unique identifiers per article while using
+     *   simpler page-based pagination for navigation
      */
     private ArticlesConnection buildConnection(Page<Article> articlePage, int currentPage) {
         List<ArticleEdge> edges = articlePage.getContent().stream()
                 .map(article -> {
+                    // Use article ID for cursor to make it unique per article
                     String cursor = Base64.getEncoder().encodeToString(
-                            String.valueOf(currentPage).getBytes()
+                            ("article_" + article.getId()).getBytes()
                     );
                     return ArticleEdge.builder()
                             .node(article)
@@ -252,18 +253,20 @@ public class ArticleQueryResolver {
                 .collect(Collectors.toList());
 
         // Build page info
+        // startCursor: cursor of first edge (article ID based)
         String startCursor = edges.isEmpty() ? null : edges.get(0).getCursor();
-
-        // For next page cursor, encode next page number
-        String nextPageCursor = articlePage.hasNext()
-                ? Base64.getEncoder().encodeToString(String.valueOf(currentPage + 1).getBytes())
-                : null;
+        
+        // endCursor: cursor for pagination (page-based for next page navigation)
+        // This is what clients should pass as 'after' to get the next page
+        String endCursor = articlePage.hasNext()
+                ? Base64.getEncoder().encodeToString(("page_" + (currentPage + 1)).getBytes())
+                : (edges.isEmpty() ? null : edges.get(edges.size() - 1).getCursor());
 
         PageInfo pageInfo = PageInfo.builder()
                 .hasNextPage(articlePage.hasNext())
                 .hasPreviousPage(articlePage.hasPrevious())
                 .startCursor(startCursor)
-                .endCursor(nextPageCursor)
+                .endCursor(endCursor)
                 .build();
 
         return ArticlesConnection.builder()

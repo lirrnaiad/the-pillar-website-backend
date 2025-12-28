@@ -44,31 +44,39 @@ public class UserQueryResolver {
             return null;
         }
 
-        try {
-            // Try to get user ID from authentication principal
-            Object principal = authentication.getPrincipal();
+        // Try to get user ID from authentication principal
+        Object principal = authentication.getPrincipal();
+        
+        if (principal instanceof User) {
+            return (User) principal;
+        } else if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
+            // If using UserDetails, extract email and find user
+            String email = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
+            return userService.findByEmail(email).orElse(null);
+        } else if (principal instanceof String) {
+            // If principal is a string (email or ID), try to find user
+            String identifier = (String) principal;
             
-            if (principal instanceof User) {
-                return (User) principal;
-            } else if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
-                // If using UserDetails, extract email and find user
-                String email = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
-                return userService.findByEmail(email).orElse(null);
-            } else if (principal instanceof String) {
-                // If principal is a string (email or ID), try to find user
-                String identifier = (String) principal;
+            Long userId = null;
+            try {
+                userId = Long.parseLong(identifier);
+            } catch (NumberFormatException e) {
+                // Not a numeric ID; we'll try treating it as an email below.
+            }
+
+            if (userId != null) {
                 try {
-                    Long userId = Long.parseLong(identifier);
                     return userService.findById(userId);
-                } catch (NumberFormatException | com.uep.pillar.exception.ResourceNotFoundException e) {
-                    return userService.findByEmail(identifier).orElse(null);
+                } catch (com.uep.pillar.exception.ResourceNotFoundException e) {
+                    // No user found by ID; fall back to email lookup below.
                 }
             }
-            
-            return null;
-        } catch (Exception e) {
-            return null;
+
+            // Either identifier is not a numeric ID or user not found by ID; try email.
+            return userService.findByEmail(identifier).orElse(null);
         }
+        
+        return null;
     }
 }
 
