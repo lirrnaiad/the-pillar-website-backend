@@ -1,5 +1,6 @@
 package com.uep.pillar.service;
 
+import com.uep.pillar.dto.ArticleFilter;
 import com.uep.pillar.exception.InvalidStatusTransitionException;
 import com.uep.pillar.exception.ResourceNotFoundException;
 import com.uep.pillar.model.Article;
@@ -246,8 +247,43 @@ public class ArticleService {
     }
 
     @Transactional(readOnly = true)
+    public Page<Article> findRecentPublished(Pageable pageable) {
+        return articleRepository.findRecentPublished(pageable);
+    }
+
+    @Transactional(readOnly = true)
     public Page<Article> searchPublished(String query, Pageable pageable) {
         return articleRepository.search(query, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Article> findByStatus(ArticleStatus status, Pageable pageable) {
+        return articleRepository.findByStatus(status, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Article> findByCategoryId(Integer categoryId, Pageable pageable) {
+        return articleRepository.findByCategoryId(categoryId, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Article> findByAuthorId(Long authorId, Pageable pageable) {
+        return articleRepository.findByAuthorId(authorId, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Article> findFeatured(Pageable pageable) {
+        return articleRepository.findTopFeatured(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Article> findPublishedByCategorySlug(String categorySlug, Pageable pageable) {
+        return articleRepository.findPublishedByCategorySlug(categorySlug, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Article> findPublishedByTagIds(Collection<Integer> tagIds, Pageable pageable) {
+        return articleRepository.findPublishedByTagIds(tagIds, pageable);
     }
 
     @Transactional
@@ -264,5 +300,46 @@ public class ArticleService {
         List<Tag> tags = tagRepository.findBySlugIn(slugs);
         for (Tag t : tags) article.removeTag(t);
         return articleRepository.save(article);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Article> findPublishedByIssueId(Long issueId, Pageable pageable) {
+        return articleRepository.findPublishedByIssueId(issueId, pageable);
+    }
+
+    /**
+     * Centralized article filtering used by GraphQL resolvers.
+     * Applies one filter at a time based on priority to avoid ambiguous combinations.
+     * Priority order: status > categoryId > authorId > featured > search > issueId > tagIds.
+     */
+    @Transactional(readOnly = true)
+    public Page<Article> findWithFilter(ArticleFilter filter, Pageable pageable) {
+        if (filter == null) {
+            return articleRepository.findAll(pageable);
+        }
+
+        if (filter.getStatus() != null) {
+            return findByStatus(filter.getStatus(), pageable);
+        }
+        if (filter.getCategoryId() != null) {
+            return findByCategoryId(filter.getCategoryId().intValue(), pageable);
+        }
+        if (filter.getAuthorId() != null) {
+            return findByAuthorId(filter.getAuthorId(), pageable);
+        }
+        if (filter.getFeatured() != null && filter.getFeatured()) {
+            return findFeatured(pageable);
+        }
+        if (filter.getSearch() != null && !filter.getSearch().trim().isEmpty()) {
+            return searchPublished(filter.getSearch().trim(), pageable);
+        }
+        if (filter.getIssueId() != null) {
+            return findPublishedByIssueId(filter.getIssueId(), pageable);
+        }
+        if (filter.getTagIds() != null && !filter.getTagIds().isEmpty()) {
+            return findPublishedByTagIds(filter.getTagIds().stream().map(Long::intValue).toList(), pageable);
+        }
+
+        return articleRepository.findAll(pageable);
     }
 }

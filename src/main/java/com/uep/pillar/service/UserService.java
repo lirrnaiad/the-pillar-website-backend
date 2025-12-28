@@ -34,6 +34,11 @@ public class UserService {
         return userRepository.findByEmail(email);
     }
 
+    @Transactional(readOnly = true)
+    public java.util.List<User> findAll() {
+        return userRepository.findAll();
+    }
+
     @Transactional
     public User register(String email, String rawPassword, String firstName, String lastName, Role role) {
         User user = User.builder()

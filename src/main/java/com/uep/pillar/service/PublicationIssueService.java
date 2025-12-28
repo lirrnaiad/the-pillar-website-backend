@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +24,11 @@ public class PublicationIssueService {
     public PublicationIssue findById(Long id) {
         return publicationIssueRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("PublicationIssue", id));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<PublicationIssue> findBySlug(String slug) {
+        return publicationIssueRepository.findBySlug(slug);
     }
 
     @Transactional

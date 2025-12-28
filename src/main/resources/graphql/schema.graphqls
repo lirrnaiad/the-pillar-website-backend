@@ -421,6 +421,16 @@ type Query {
     featuredArticles(first: Int = 5): [Article!]!
 
     """
+    Get articles by category slug with pagination.
+    """
+    articlesByCategory(
+        categorySlug: String!
+        first: Int = 10
+        after: String
+        sort: ArticleSort
+    ): ArticlesConnection!
+
+    """
     Get recent published articles.
     """
     recentArticles(first: Int = 10): [Article!]!
@@ -467,6 +477,11 @@ type Query {
     Get a single tag by ID.
     """
     tag(id: ID!): Tag
+
+    """
+    Get a tag by slug.
+    """
+    tagBySlug(slug: String!): Tag
 
     # Media queries
     """

@@ -94,4 +94,9 @@ public class MediaService {
     public Page<Media> listByType(MediaType type, Pageable pageable) {
         return mediaRepository.findByType(type, pageable);
     }
+
+    @Transactional(readOnly = true)
+    public java.util.List<Media> findAll() {
+        return mediaRepository.findAll();
+    }
 }

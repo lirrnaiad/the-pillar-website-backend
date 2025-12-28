@@ -27,6 +27,11 @@ public class TagService {
         return tagRepository.findBySlug(slug);
     }
 
+    @Transactional(readOnly = true)
+    public List<Tag> findAll() {
+        return tagRepository.findAll();
+    }
+
     @Transactional
     public Tag create(String name) {
         String slug = slugService.generateUniqueSlug(name, Tag.class, null);
