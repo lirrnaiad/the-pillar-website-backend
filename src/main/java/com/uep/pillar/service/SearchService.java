@@ -32,7 +32,7 @@ public class SearchService {
      */
     @Transactional(readOnly = true)
     public List<SearchHighlight> searchWithHighlights(String query, int limit) {
-        List<Object[]> rows = articleRepository.searchWithHighlights(query, Math.max(limit, 1));
+        List<Object[]> rows = articleRepository.searchWithHighlights(query, Math.min(Math.max(limit, 1), 100));
         List<SearchHighlight> results = new ArrayList<>(rows.size());
         for (Object[] r : rows) {
             Long id = r[0] != null ? ((Number) r[0]).longValue() : null;

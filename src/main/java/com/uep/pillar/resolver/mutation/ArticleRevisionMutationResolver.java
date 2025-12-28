@@ -33,7 +33,7 @@ public class ArticleRevisionMutationResolver extends BaseMutationResolver {
     @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
     public Article restoreArticleFromRevision(String revisionId) {
         Long id = parseLongId(revisionId, "Revision ID");
-        Article updated = articleRevisionService.restoreFromRevision(id);
+        Article updated = articleRevisionService.restoreFromRevision(id, getCurrentUser());
         auditLogService.logArticle(AuditAction.RESTORE, null, updated, "restore-from-revision");
         return updated;
     }

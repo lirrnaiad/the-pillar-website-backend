@@ -89,6 +89,7 @@ public class CloudStorageService {
     public void deleteFile(String publicId) {
         if (publicId == null || publicId.isBlank()) return;
         boolean allNotFound = true;
+        boolean anyError = false;
         
         for (String resourceType : List.of("image", "video", "raw")) {
             try {
@@ -99,11 +100,13 @@ public class CloudStorageService {
                 if (Objects.equals(result, "ok")) {
                     return;
                 }
-                // If not found, try next resource type
+                // If not found, continue to next resource type
                 if (!Objects.equals(result, "not found")) {
                     allNotFound = false;
+                    anyError = true;
                 }
             } catch (Exception e) {
+                anyError = true;
                 allNotFound = false;
                 // Log and continue; if all fail, throw
                 log.warn("Cloudinary delete failed for resource_type={} publicId={}: {}", resourceType, publicId, e.getMessage());
@@ -115,7 +118,9 @@ public class CloudStorageService {
             return;
         }
         
-        throw new StorageException("Failed to delete Cloudinary asset with publicId=" + publicId);
+        if (anyError) {
+            throw new StorageException("Failed to delete Cloudinary asset with publicId=" + publicId);
+        }
     }
 
     /**
@@ -202,17 +207,32 @@ public class CloudStorageService {
     ) {}
 
     private void validateType(String extension, String contentType, Set<String> allowedExt, Set<String> allowedMime) {
-        if (!allowedExt.contains(extension.toLowerCase())) {
+        if (extension == null || extension.isBlank()) {
+            throw new IllegalArgumentException("Missing file extension");
+        }
+        if (contentType == null || contentType.isBlank()) {
+            throw new IllegalArgumentException("Missing MIME type");
+        }
+
+        String normalizedExtension = extension.toLowerCase(Locale.ROOT);
+        if (!allowedExt.contains(normalizedExtension)) {
             throw new IllegalArgumentException("Invalid file extension: " + extension);
         }
-        if (!allowedMime.contains(contentType.toLowerCase())) {
+
+        String normalizedContentType = contentType.toLowerCase(Locale.ROOT);
+        if (!allowedMime.contains(normalizedContentType)) {
             throw new IllegalArgumentException("Invalid MIME type: " + contentType);
         }
     }
 
     private String extractExtension(String filename) {
+        if (filename == null || filename.isBlank()) {
+            throw new IllegalArgumentException("Filename must not be null or blank");
+        }
         int idx = filename.lastIndexOf('.');
-        if (idx < 0 || idx == filename.length() - 1) return "";
+        if (idx < 0 || idx == filename.length() - 1) {
+            throw new IllegalArgumentException("Filename must have a valid extension");
+        }
         return filename.substring(idx + 1);
     }
 

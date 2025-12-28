@@ -63,6 +63,7 @@ public class AuditLogService {
                 .newValue(newValue)
                 .ipAddress(ip)
                 .userAgent(ua)
+                .note(note)
                 .build();
         auditLogRepository.save(log);
     }
