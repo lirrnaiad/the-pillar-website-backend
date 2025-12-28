@@ -200,6 +200,16 @@ type PageInfo {
 }
 
 """
+Highlighted search result for previews.
+Contains HTML snippet with <mark> tags.
+"""
+type SearchHighlight {
+    id: ID!
+    title: String!
+    snippet: String!
+}
+
+"""
 Authentication response containing JWT token and user information.
 """
 type AuthResponse {
@@ -426,6 +436,14 @@ type Query {
     ): ArticlesConnection!
 
     """
+    Search articles and return highlighted snippets for previews.
+    """
+    searchHighlights(
+        query: String!
+        limit: Int = 10
+    ): [SearchHighlight!]!
+
+    """
     Get featured articles.
     """
     featuredArticles(first: Int = 5): [Article!]!
@@ -634,6 +652,11 @@ type Mutation {
     Restore a soft-deleted article.
     """
     restoreArticle(id: ID!): Article!
+
+    """
+    Restore an article's content/title from a specific revision.
+    """
+    restoreArticleFromRevision(revisionId: ID!): Article!
 
     """
     Increment article view count.

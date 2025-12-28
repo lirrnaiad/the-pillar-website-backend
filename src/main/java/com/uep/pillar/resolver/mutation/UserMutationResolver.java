@@ -7,6 +7,7 @@ import com.uep.pillar.model.User;
 import com.uep.pillar.repository.RoleRepository;
 import com.uep.pillar.service.UserService;
 import org.springframework.stereotype.Component;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * GraphQL Mutation Resolver for User mutations.
@@ -29,6 +30,7 @@ public class UserMutationResolver extends BaseMutationResolver {
      * @param input user creation input
      * @return the created user
      */
+    @PreAuthorize("hasRole('ADMIN')")
     public User createUser(CreateUserInput input) {
         // Fetch role if provided
         Role role = null;
@@ -57,6 +59,7 @@ public class UserMutationResolver extends BaseMutationResolver {
      * @param input user update input
      * @return the updated user
      */
+    @PreAuthorize("hasRole('ADMIN')")
     public User updateUser(UpdateUserInput input) {
         Long id = parseLongId(input.getId(), "User ID");
 
@@ -85,6 +88,7 @@ public class UserMutationResolver extends BaseMutationResolver {
      * @param id the user ID
      * @return true on success
      */
+    @PreAuthorize("hasRole('ADMIN')")
     public Boolean deleteUser(String id) {
         Long userId = parseLongId(id, "User ID");
         this.userService.softDelete(userId);

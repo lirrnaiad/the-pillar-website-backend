@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -39,6 +40,7 @@ public class MediaUploadController {
     private final UserService userService;
 
     @PostMapping("/upload")
+    @PreAuthorize("hasAnyRole('ADMIN','EDITOR','WRITER')")
     public ResponseEntity<?> upload(
             @RequestParam("file") MultipartFile file,
             @RequestParam("type") MediaType type,
@@ -105,6 +107,7 @@ public class MediaUploadController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
     public ResponseEntity<?> delete(@PathVariable("id") Long id) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
