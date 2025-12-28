@@ -6,9 +6,8 @@ import com.uep.pillar.model.Article;
 import com.uep.pillar.model.Media;
 import com.uep.pillar.model.Tag;
 import com.uep.pillar.model.User;
-import com.uep.pillar.repository.ArticleRepository;
-import com.uep.pillar.repository.MediaRepository;
 import com.uep.pillar.service.ArticleService;
+import com.uep.pillar.service.MediaService;
 import com.uep.pillar.service.TagService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -27,8 +26,7 @@ public class ArticleMutationResolver extends BaseMutationResolver {
 
     private final ArticleService articleService;
     private final TagService tagService;
-    private final MediaRepository mediaRepository;
-    private final ArticleRepository articleRepository;
+    private final MediaService mediaService;
 
     /**
      * Create a new article.
@@ -68,11 +66,9 @@ public class ArticleMutationResolver extends BaseMutationResolver {
             input.getSlug()
         );
 
-        // Apply metadata fields and save if needed
-        if (applyMetadataFields(article, input.getCoverId(), input.getMetaTitle(), 
-                                 input.getMetaDescription(), input.getOgImage())) {
-            article = articleRepository.save(article);
-        }
+        // Apply metadata fields (article is managed, changes will be persisted)
+        applyMetadataFields(article, input.getCoverId(), input.getMetaTitle(), 
+                           input.getMetaDescription(), input.getOgImage());
 
         // Handle initial status if not DRAFT
         if (input.getStatus() != null && input.getStatus() != com.uep.pillar.model.enums.ArticleStatus.DRAFT) {
@@ -127,11 +123,9 @@ public class ArticleMutationResolver extends BaseMutationResolver {
             input.getSlug()
         );
 
-        // Apply metadata fields and save if needed
-        if (applyMetadataFields(article, input.getCoverId(), input.getMetaTitle(), 
-                                 input.getMetaDescription(), input.getOgImage())) {
-            article = articleRepository.save(article);
-        }
+        // Apply metadata fields (article is managed, changes will be persisted by subsequent service calls)
+        applyMetadataFields(article, input.getCoverId(), input.getMetaTitle(), 
+                           input.getMetaDescription(), input.getOgImage());
 
         // Handle featured flag
         if (input.getFeatured() != null && input.getFeatured() != article.isFeatured()) {
@@ -267,41 +261,31 @@ public class ArticleMutationResolver extends BaseMutationResolver {
     /**
      * Apply metadata fields (cover, metaTitle, metaDescription, ogImage) to an article.
      * 
-     * @param article the article to update
+     * @param article the article to update (will be modified in-place)
      * @param coverId the cover media ID (optional)
      * @param metaTitle the meta title (optional)
      * @param metaDescription the meta description (optional)
      * @param ogImage the OG image URL (optional)
-     * @return true if any metadata was set, false otherwise
      */
-    private boolean applyMetadataFields(Article article, String coverId, 
-                                        String metaTitle, String metaDescription, String ogImage) {
-        boolean needsSave = false;
-
+    private void applyMetadataFields(Article article, String coverId, 
+                                     String metaTitle, String metaDescription, String ogImage) {
         // Set cover image if provided
         if (coverId != null) {
             Long coverMediaId = parseLongId(coverId, "Cover ID");
-            Media cover = mediaRepository.findById(coverMediaId)
-                .orElseThrow(() -> new IllegalArgumentException("Cover media not found: " + coverMediaId));
+            Media cover = mediaService.findById(coverMediaId);
             article.setCover(cover);
-            needsSave = true;
         }
 
         // Set metadata fields if provided
         if (metaTitle != null) {
             article.setMetaTitle(metaTitle);
-            needsSave = true;
         }
         if (metaDescription != null) {
             article.setMetaDescription(metaDescription);
-            needsSave = true;
         }
         if (ogImage != null) {
             article.setOgImage(ogImage);
-            needsSave = true;
         }
-
-        return needsSave;
     }
 
     /**
