@@ -4,6 +4,7 @@ import com.uep.pillar.model.Article;
 import com.uep.pillar.model.enums.ArticleStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -25,6 +26,17 @@ import java.util.Optional;
 @Repository
 public interface ArticleRepository extends JpaRepository<Article, Long> {
 
+    // ==================== FIND BY ID (with relations) ====================
+    
+    @EntityGraph(attributePaths = {"author", "category", "cover", "tags"})
+    @Override
+    Optional<Article> findById(Long id);
+    
+    // Override findAll to eagerly fetch relationships
+    @EntityGraph(attributePaths = {"author", "category", "cover", "tags"})
+    @Override
+    Page<Article> findAll(Pageable pageable);
+
     // ==================== FIND BY SLUG ====================
 
     /**
@@ -33,7 +45,9 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param slug the article slug
      * @return the article if found (excludes soft-deleted)
      */
-    Optional<Article> findBySlug(String slug);
+    @EntityGraph(attributePaths = {"author", "category", "cover", "tags"})
+    @Query("SELECT a FROM Article a WHERE a.slug = :slug")
+    Optional<Article> findBySlug(@Param("slug") String slug);
 
     /**
      * Check if an article with the given slug exists.
@@ -52,7 +66,9 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info
      * @return paginated list of articles
      */
-    Page<Article> findByStatus(ArticleStatus status, Pageable pageable);
+    @EntityGraph(attributePaths = {"author", "category", "cover", "tags"})
+    @Query("SELECT a FROM Article a WHERE a.status = :status")
+    Page<Article> findByStatus(@Param("status") ArticleStatus status, Pageable pageable);
 
     /**
      * Find all published articles.
@@ -60,6 +76,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info
      * @return paginated list of published articles
      */
+    @EntityGraph(attributePaths = {"author", "category", "cover", "tags"})
     @Query("SELECT a FROM Article a WHERE a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
     Page<Article> findAllPublished(Pageable pageable);
 
@@ -72,7 +89,9 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info
      * @return paginated list of articles
      */
-    Page<Article> findByCategoryId(Integer categoryId, Pageable pageable);
+    @EntityGraph(attributePaths = {"author", "category", "cover", "tags"})
+    @Query("SELECT a FROM Article a WHERE a.category.id = :categoryId")
+    Page<Article> findByCategoryId(@Param("categoryId") Integer categoryId, Pageable pageable);
 
     /**
      * Find published articles by category slug.
@@ -81,6 +100,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info
      * @return paginated list of published articles in that category
      */
+    @EntityGraph(attributePaths = {"author", "category", "cover", "tags"})
     @Query("SELECT a FROM Article a WHERE a.category.slug = :categorySlug AND a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
     Page<Article> findPublishedByCategorySlug(@Param("categorySlug") String categorySlug, Pageable pageable);
 
@@ -93,6 +113,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info
      * @return paginated list of articles
      */
+    @EntityGraph(attributePaths = {"author", "category", "cover", "tags"})
     Page<Article> findByAuthorId(Long authorId, Pageable pageable);
 
     /**
@@ -102,6 +123,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info
      * @return paginated list of published articles
      */
+    @EntityGraph(attributePaths = {"author", "category", "cover", "tags"})
     @Query("SELECT a FROM Article a WHERE a.author.id = :authorId AND a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
     Page<Article> findPublishedByAuthorId(@Param("authorId") Long authorId, Pageable pageable);
 
@@ -113,6 +135,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info
      * @return paginated list of featured articles
      */
+    @EntityGraph(attributePaths = {"author", "category", "cover", "tags"})
     @Query("SELECT a FROM Article a WHERE a.featured = true AND a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
     Page<Article> findFeatured(Pageable pageable);
 
@@ -122,6 +145,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info (use PageRequest.of(0, limit) to limit results)
      * @return page of featured articles
      */
+    @EntityGraph(attributePaths = {"author", "category", "cover", "tags"})
     @Query("SELECT a FROM Article a WHERE a.featured = true AND a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
     Page<Article> findTopFeatured(Pageable pageable);
 
@@ -181,6 +205,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info
      * @return paginated list of articles
      */
+    @EntityGraph(attributePaths = {"author", "category", "cover", "tags"})
     Page<Article> findByIssueId(Long issueId, Pageable pageable);
 
     /**
@@ -194,6 +219,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info (only page number and size are used; sort is ignored)
      * @return paginated list of published articles in that issue, sorted by publishedAt DESC
      */
+    @EntityGraph(attributePaths = {"author", "category", "cover", "tags"})
     @Query("SELECT a FROM Article a WHERE a.issue.id = :issueId AND a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
     Page<Article> findPublishedByIssueId(@Param("issueId") Long issueId, Pageable pageable);
 
@@ -206,6 +232,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info
      * @return paginated list of articles with that tag
      */
+    @EntityGraph(attributePaths = {"author", "category", "cover", "tags"})
     @Query("SELECT a FROM Article a JOIN a.tags t WHERE t.slug = :tagSlug AND a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
     Page<Article> findPublishedByTagSlug(@Param("tagSlug") String tagSlug, Pageable pageable);
 
@@ -216,6 +243,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info
      * @return paginated list of articles with any of the given tags
      */
+    @EntityGraph(attributePaths = {"author", "category", "cover", "tags"})
     @Query("SELECT DISTINCT a FROM Article a JOIN a.tags t WHERE t.id IN :tagIds AND a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
     Page<Article> findPublishedByTagIds(@Param("tagIds") Collection<Integer> tagIds, Pageable pageable);
 
@@ -294,6 +322,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info (use PageRequest.of(0, limit) to limit results)
      * @return page of recent articles
      */
+    @EntityGraph(attributePaths = {"author", "category", "cover", "tags"})
     @Query("SELECT a FROM Article a WHERE a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.publishedAt DESC")
     Page<Article> findRecentPublished(Pageable pageable);
 
@@ -303,6 +332,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * @param pageable pagination info (use PageRequest.of(0, limit) to limit results)
      * @return page of popular articles
      */
+    @EntityGraph(attributePaths = {"author", "category", "cover", "tags"})
     @Query("SELECT a FROM Article a WHERE a.status = com.uep.pillar.model.enums.ArticleStatus.PUBLISHED ORDER BY a.viewCount DESC")
     Page<Article> findMostViewed(Pageable pageable);
 }
