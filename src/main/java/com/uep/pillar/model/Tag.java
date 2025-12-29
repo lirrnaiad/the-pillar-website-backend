@@ -1,5 +1,6 @@
 package com.uep.pillar.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,6 +15,7 @@ import java.util.Objects;
 @Table(name = "tags", indexes = {
     @Index(name = "idx_tags_slug", columnList = "slug")
 })
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

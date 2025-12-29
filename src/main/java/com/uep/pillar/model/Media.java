@@ -1,5 +1,6 @@
 package com.uep.pillar.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.uep.pillar.model.enums.MediaType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -17,6 +18,7 @@ import java.util.Objects;
     @Index(name = "idx_media_uploaded_by", columnList = "uploaded_by"),
     @Index(name = "idx_media_type", columnList = "type")
 })
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -1,5 +1,6 @@
 package com.uep.pillar.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.uep.pillar.model.enums.ArticleStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -33,6 +34,7 @@ import java.util.Set;
     @Index(name = "idx_articles_deleted_at", columnList = "deleted_at")
 })
 @SQLRestriction("deleted_at IS NULL")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Getter
 @Setter
 @Builder
