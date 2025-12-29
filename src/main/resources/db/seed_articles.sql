@@ -135,8 +135,7 @@ BEGIN
         writer_user_id,
         news_cat_id,
         '2025-09-23 10:00:00'
-    ) ON CONFLICT (slug) DO NOTHING
-    RETURNING id INTO media_id_counter;
+    ) ON CONFLICT (slug) DO NOTHING;
 
     -- Link to Academe tag
     INSERT INTO article_tags (article_id, tag_id)
