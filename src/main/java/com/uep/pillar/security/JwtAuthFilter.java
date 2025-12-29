@@ -33,6 +33,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
 
+    /**
+     * Skip JWT filtering for public endpoints (auth endpoints, error pages, health checks).
+     * This ensures these endpoints are not blocked even if JWT processing fails.
+     */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.startsWith("/api/auth") || 
+               path.equals("/error") || 
+               path.equals("/actuator/health");
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, 
                                     FilterChain filterChain) throws ServletException, IOException {

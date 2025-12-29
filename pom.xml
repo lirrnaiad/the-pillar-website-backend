@@ -16,14 +16,13 @@
     <artifactId>the-pillar-website-backend</artifactId>
     <version>1.0.0</version>
     <name>The Pillar E-Publication Website Backend</name>
-    <description>Backend API for The Pillar E-Publication Website using Spring Boot and GraphQL</description>
+    <description>Backend API for The Pillar E-Publication Website using Spring Boot and REST</description>
     
     <properties>
         <java.version>17</java.version>
-        <graphql.spring.boot.starter.version>15.0.0</graphql.spring.boot.starter.version>
-        <graphql.java.tools.version>13.0.2</graphql.java.tools.version>
-        <graphql.altair.version>11.1.0</graphql.altair.version>
-        <lombok.version>1.18.30</lombok.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <lombok.version>1.18.34</lombok.version>
     </properties>
     
     <dependencyManagement>
@@ -63,25 +62,6 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
-        </dependency>
-        
-        <!-- GraphQL Dependencies -->
-        <dependency>
-            <groupId>com.graphql-java-kickstart</groupId>
-            <artifactId>graphql-spring-boot-starter</artifactId>
-            <version>${graphql.spring.boot.starter.version}</version>
-        </dependency>
-        
-        <dependency>
-            <groupId>com.graphql-java-kickstart</groupId>
-            <artifactId>graphql-java-tools</artifactId>
-            <version>${graphql.java.tools.version}</version>
-        </dependency>
-        
-        <dependency>
-            <groupId>com.graphql-java-kickstart</groupId>
-            <artifactId>altair-spring-boot-starter</artifactId>
-            <version>${graphql.altair.version}</version>
         </dependency>
         
         <!-- JWT for Authentication -->
@@ -128,6 +108,13 @@
             <artifactId>cloudinary-http44</artifactId>
             <version>1.36.0</version>
         </dependency>
+        
+        <!-- ANTLR Runtime - Force correct version for Spring Data JPA compatibility -->
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+            <version>4.11.1</version>
+        </dependency>
     </dependencies>
     
     <build>
@@ -142,6 +129,15 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                    <release>17</release>
                 </configuration>
             </plugin>
         </plugins>

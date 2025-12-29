@@ -266,7 +266,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
      * 
      * @param articleId the article ID
      */
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE Article a SET a.viewCount = a.viewCount + 1 WHERE a.id = :articleId")
     void incrementViewCount(@Param("articleId") Long articleId);
 

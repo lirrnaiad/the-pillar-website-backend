@@ -344,7 +344,7 @@ public class ArticleService {
     }
 
     /**
-     * Centralized article filtering used by GraphQL resolvers.
+     * Centralized article filtering used by REST controllers.
      * Applies one filter at a time based on priority to avoid ambiguous combinations.
      * Priority order: status > categoryId > authorId > featured > search > issueId > tagIds.
      */

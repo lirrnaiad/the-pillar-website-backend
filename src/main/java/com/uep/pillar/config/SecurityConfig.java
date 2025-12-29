@@ -25,6 +25,18 @@ import java.util.Arrays;
 /**
  * Spring Security configuration for JWT-based authentication.
  * Configures authentication filter, security filter chain, and CORS.
+ * 
+ * Production Deployment:
+ * - Set CORS_ALLOWED_ORIGINS environment variable to your frontend URLs
+ * - Example: CORS_ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+ * - Or set cors.allowed-origins in application-prod.properties
+ * 
+ * Security Features:
+ * - Stateless JWT-based authentication
+ * - CSRF disabled for REST API (stateless)
+ * - Role-based authorization via @PreAuthorize
+ * - Public read endpoints for articles, categories, tags, publication issues
+ * - Authenticated endpoints for write operations
  */
 @Configuration
 @EnableWebSecurity
@@ -36,6 +48,11 @@ public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * CORS allowed origins configuration.
+     * Configure via environment variable CORS_ALLOWED_ORIGINS or cors.allowed-origins property.
+     * Format: comma-separated list of URLs (e.g., "https://domain.com,https://www.domain.com")
+     */
     @Value("${cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
     private String[] allowedOrigins;
 
@@ -57,14 +74,23 @@ public class SecurityConfig {
         http
             .authenticationProvider(authenticationProvider())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // CSRF is disabled for stateless JWT-based API endpoints; remains enabled for other paths if needed
-            .csrf(csrf -> csrf.ignoringRequestMatchers("/graphql", "/altair/**", "/error", "/actuator/health"))
-            .cors(cors -> {})
+            // CSRF is disabled for stateless JWT-based API endpoints
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**", "/error", "/actuator/health"))
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/graphql").permitAll()
-                .requestMatchers("/altair/**").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
+                // Public read endpoints
+                .requestMatchers("GET", "/api/articles/**").permitAll()
+                .requestMatchers("GET", "/api/categories/**").permitAll()
+                .requestMatchers("GET", "/api/tags/**").permitAll()
+                .requestMatchers("GET", "/api/publication-issues/**").permitAll()
+                .requestMatchers("GET", "/api/search/**").permitAll()
+                .requestMatchers("GET", "/api/media/**").permitAll() // Public media access
+                .requestMatchers("POST", "/api/articles/**/views").permitAll() // View count increment
+                // All other API endpoints require authentication
+                .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -72,12 +98,26 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * CORS configuration for frontend integration.
+     * 
+     * Production Setup:
+     * 1. Set CORS_ALLOWED_ORIGINS environment variable with your frontend URLs
+     * 2. Or configure cors.allowed-origins in application-prod.properties
+     * 
+     * Allowed:
+     * - Methods: GET, POST, PUT, DELETE, OPTIONS
+     * - Headers: All headers (*)
+     * - Credentials: Enabled (for JWT cookies if needed)
+     * - Max Age: 3600 seconds (1 hour)
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // CORS origins are configurable via environment variable.
-        // Default: http://localhost:5173,http://localhost:3000 for development.
-        // IMPORTANT: Override this in production via cors.allowed-origins property.
+        // CORS origins are configurable via environment variable CORS_ALLOWED_ORIGINS
+        // or cors.allowed-origins property in application.properties/application-prod.properties
+        // Default: http://localhost:5173,http://localhost:3000 for development
+        // IMPORTANT: Override this in production with your frontend domain(s)
         configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));

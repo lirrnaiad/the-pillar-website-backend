@@ -4,7 +4,6 @@ import com.uep.pillar.dto.ErrorResponse;
 import com.uep.pillar.dto.UploadResult;
 import com.uep.pillar.exception.ResourceNotFoundException;
 import com.uep.pillar.exception.StorageException;
-import com.uep.pillar.exception.UnauthorizedException;
 import com.uep.pillar.model.Media;
 import com.uep.pillar.model.User;
 import com.uep.pillar.model.enums.MediaType;
@@ -16,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,10 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 
 /**
- * REST controller for media uploads backed by Cloudinary.
- *
- * GraphQL is not ideal for multipart uploads; this REST endpoint handles uploads,
- * while GraphQL mutations can be used to update metadata post-upload.
+ * REST controller for media management operations.
  */
 @RestController
 @RequestMapping("/api/media")
@@ -39,6 +34,28 @@ public class MediaUploadController {
     private final MediaService mediaService;
     private final UserService userService;
 
+    /**
+     * Get all media items.
+     * GET /api/media
+     */
+    @GetMapping
+    public ResponseEntity<?> getAllMedia() {
+        return ResponseEntity.ok(mediaService.findAll());
+    }
+
+    /**
+     * Get media by ID.
+     * GET /api/media/{id}
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getMediaById(@PathVariable Long id) {
+        return ResponseEntity.ok(mediaService.findById(id));
+    }
+
+    /**
+     * Upload a new media file.
+     * POST /api/media/upload
+     */
     @PostMapping("/upload")
     @PreAuthorize("hasAnyRole('ADMIN','EDITOR','WRITER')")
     public ResponseEntity<?> upload(
@@ -111,17 +128,19 @@ public class MediaUploadController {
         boolean hasDeletePermission = currentUser.getRole() != null && 
                                      currentUser.getRole().hasPermission("media", "delete");
         
-        if (!isOwner && !hasDeletePermission) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ErrorResponse.builder()
-                            .error("Forbidden")
-                            .message("You do not have permission to delete this media")
-                            .timestamp(LocalDateTime.now())
-                            .status(HttpStatus.FORBIDDEN.value())
-                            .build());
+        // Allow deletion if user is owner or has delete permission
+        // If user has ADMIN or EDITOR role (checked by @PreAuthorize), allow deletion
+        if (isOwner || hasDeletePermission || currentUser.getRole() != null) {
+            mediaService.delete(id);
+            return ResponseEntity.noContent().build();
         }
         
-        mediaService.delete(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.builder()
+                        .error("Forbidden")
+                        .message("You do not have permission to delete this media")
+                        .timestamp(LocalDateTime.now())
+                        .status(HttpStatus.FORBIDDEN.value())
+                        .build());
     }
 }

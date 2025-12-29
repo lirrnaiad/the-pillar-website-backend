@@ -29,7 +29,7 @@ This document outlines the architectural decisions and best practices for The Pi
 |-------|------------|
 | Framework | Spring Boot 3.2.0 |
 | Language | Java 17 |
-| API | GraphQL |
+| API | REST |
 | Database | PostgreSQL |
 | Cache | Redis |
 | Object Storage | Cloudinary / AWS S3 |
@@ -369,8 +369,7 @@ the-pillar-website-backend/
 │   │   ├── SecurityConfig.java
 │   │   ├── CorsConfig.java
 │   │   ├── CacheConfig.java           # Redis configuration
-│   │   ├── CloudStorageConfig.java    # Cloudinary/S3 config
-│   │   └── GraphQLConfig.java
+│   │   └── CloudStorageConfig.java    # Cloudinary/S3 config
 │   │
 │   ├── model/
 │   │   ├── Article.java
@@ -409,16 +408,14 @@ the-pillar-website-backend/
 │   │   ├── RssFeedService.java        # RSS generation
 │   │   └── AuditService.java          # Audit logging
 │   │
-│   ├── resolver/
-│   │   ├── query/
-│   │   │   ├── ArticleQueryResolver.java
-│   │   │   ├── CategoryQueryResolver.java
-│   │   │   ├── UserQueryResolver.java
-│   │   │   └── SearchQueryResolver.java
-│   │   └── mutation/
-│   │       ├── ArticleMutationResolver.java
-│   │       ├── MediaMutationResolver.java
-│   │       └── AuthMutationResolver.java
+│   ├── controller/
+│   │   ├── AuthController.java
+│   │   ├── ArticleController.java
+│   │   ├── UserController.java
+│   │   ├── CategoryController.java
+│   │   ├── TagController.java
+│   │   ├── MediaUploadController.java
+│   │   └── ... (other REST controllers)
 │   │
 │   ├── dto/
 │   │   ├── ArticleDTO.java
@@ -448,13 +445,7 @@ the-pillar-website-backend/
 └── src/main/resources/
     ├── application.properties
     ├── application-dev.properties
-    ├── application-prod.properties
-    └── graphql/
-        ├── schema.graphqls          # Root schema
-        ├── article.graphqls         # Article types & queries
-        ├── user.graphqls            # User types & queries
-        ├── media.graphqls           # Media types & mutations
-        └── search.graphqls          # Search queries
+    └── application-prod.properties
 ```
 
 ---
@@ -845,7 +836,7 @@ spring.cache.redis.time-to-live=300000
 
 ### Code Quality
 - [ ] Write unit tests for services
-- [ ] Write integration tests for resolvers
+- [x] Write integration tests for REST controllers
 - [ ] Document public APIs
 - [ ] Use consistent naming conventions
 - [ ] Handle exceptions gracefully
@@ -855,7 +846,7 @@ spring.cache.redis.time-to-live=300000
 ## References
 
 - [Spring Boot Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/)
-- [GraphQL Java Kickstart](https://github.com/graphql-java-kickstart/graphql-spring-boot)
+- [Spring Boot REST API Documentation](https://spring.io/guides/gs/rest-service/)
 - [Cloudinary Java SDK](https://cloudinary.com/documentation/java_integration)
 - [PostgreSQL Full-Text Search](https://www.postgresql.org/docs/current/textsearch.html)
 - [Redis Spring Data](https://docs.spring.io/spring-data/redis/reference/html/)
