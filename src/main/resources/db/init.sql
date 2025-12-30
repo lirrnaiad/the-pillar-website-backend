@@ -281,7 +281,8 @@ INSERT INTO categories (name, slug, description, color) VALUES
 ('Photos', 'photos', 'Photojournalism', '#F4511E'),
 ('Cartoons', 'cartoons', 'Cartoons and comics', '#FDD835'),
 ('Videos', 'videos', 'Video content', '#00ACC1'),
-('Editorial', 'editorial', 'Editorial board articles', '#6D4C41');
+('Editorial', 'editorial', 'Editorial board articles', '#6D4C41'),
+('Sports', 'sports', 'Campus sports and athletics', '#f39c12');
 
 -- ============================================
 -- OPTIONAL: CREATE DEFAULT ADMIN USER
