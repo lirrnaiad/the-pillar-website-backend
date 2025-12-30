@@ -12,8 +12,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.time.LocalDateTime;
 
 /**
@@ -99,17 +97,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         log.error("Unexpected error: {}", ex.getMessage(), ex);
-        
-        // #region agent log
-        writeDebugLog("GlobalExceptionHandler:handleGenericException", 
-            "EXCEPTION caught - full details", 
-            "A,B,C,D,E",
-            String.format("{\"exceptionClass\":\"%s\",\"message\":\"%s\",\"stackTrace\":\"%s\"}", 
-                ex.getClass().getName(),
-                escapeJson(ex.getMessage()),
-                escapeJson(getStackTraceTop(ex, 5))));
-        // #endregion
-        
         // Temporarily include exception details for debugging
         String errorMessage = "An unexpected error occurred: " + ex.getClass().getSimpleName() + " - " + ex.getMessage();
         ErrorResponse error = ErrorResponse.builder()
@@ -120,36 +107,5 @@ public class GlobalExceptionHandler {
                 .build();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
-    
-    // #region agent log helpers
-    private void writeDebugLog(String location, String message, String hypothesisId, String dataJson) {
-        try (FileWriter fw = new FileWriter("/home/lirrnaiad/Documents/Cursor/the-pillar/.cursor/debug.log", true)) {
-            String logEntry = String.format("{\"location\":\"%s\",\"message\":\"%s\",\"data\":%s,\"timestamp\":%d,\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"%s\"}\n",
-                location, message, dataJson, System.currentTimeMillis(), hypothesisId);
-            fw.write(logEntry);
-        } catch (IOException e) {
-            log.warn("Failed to write debug log: {}", e.getMessage());
-        }
-    }
-    
-    private String escapeJson(String str) {
-        if (str == null) return "null";
-        return str.replace("\\", "\\\\")
-                  .replace("\"", "\\\"")
-                  .replace("\n", "\\n")
-                  .replace("\r", "\\r")
-                  .replace("\t", "\\t");
-    }
-    
-    private String getStackTraceTop(Exception ex, int lines) {
-        StringBuilder sb = new StringBuilder();
-        StackTraceElement[] trace = ex.getStackTrace();
-        for (int i = 0; i < Math.min(lines, trace.length); i++) {
-            if (i > 0) sb.append(" <- ");
-            sb.append(trace[i].toString());
-        }
-        return sb.toString();
-    }
-    // #endregion
 }
 

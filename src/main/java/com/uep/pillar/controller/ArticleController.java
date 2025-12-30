@@ -14,7 +14,6 @@ import com.uep.pillar.service.TagService;
 import com.uep.pillar.service.UserService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,8 +26,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -40,7 +37,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/articles")
 @RequiredArgsConstructor
-@Slf4j
 public class ArticleController {
 
     private final ArticleService articleService;
@@ -77,14 +73,6 @@ public class ArticleController {
             @RequestParam(required = false) String sortField,
             @RequestParam(required = false) String sortDirection) {
         
-        // #region agent log
-        writeDebugLog("ArticleController:getArticles:ENTRY", 
-            "getArticles called with params",
-            "A,B,D,E",
-            String.format("{\"page\":%d,\"size\":%d,\"status\":\"%s\",\"categoryId\":\"%s\",\"featured\":\"%s\"}", 
-                page, size, status, categoryId, featured));
-        // #endregion
-        
         int pageSize = Math.min(size, 100); // Max 100 items per page
         Sort sort = buildSort(sortField, sortDirection);
         Pageable pageable = PageRequest.of(page, pageSize, sort);
@@ -99,23 +87,7 @@ public class ArticleController {
                 .search(search)
                 .build();
 
-        // #region agent log
-        writeDebugLog("ArticleController:getArticles:BEFORE_QUERY", 
-            "About to call articleService.findWithFilter",
-            "B,D",
-            String.format("{\"filter\":\"%s\",\"pageable\":\"%s\"}", filter, pageable));
-        // #endregion
-
         Page<Article> articlePage = articleService.findWithFilter(filter, pageable);
-        
-        // #region agent log
-        writeDebugLog("ArticleController:getArticles:AFTER_QUERY", 
-            "Query completed successfully",
-            "B,D",
-            String.format("{\"totalElements\":%d,\"totalPages\":%d,\"numberOfElements\":%d}", 
-                articlePage.getTotalElements(), articlePage.getTotalPages(), articlePage.getNumberOfElements()));
-        // #endregion
-
         return ResponseEntity.ok(articlePage);
     }
 
@@ -146,24 +118,9 @@ public class ArticleController {
     @GetMapping("/featured")
     public ResponseEntity<List<Article>> getFeaturedArticles(
             @RequestParam(defaultValue = "5") int limit) {
-        // #region agent log
-        writeDebugLog("ArticleController:getFeaturedArticles:ENTRY", 
-            "getFeaturedArticles called",
-            "A,B,C,D",
-            String.format("{\"limit\":%d}", limit));
-        // #endregion
-        
         int maxLimit = Math.min(limit, 50);
         Pageable pageable = PageRequest.of(0, maxLimit, Sort.by(Sort.Direction.DESC, "publishedAt"));
         Page<Article> featuredPage = articleService.findFeatured(pageable);
-        
-        // #region agent log
-        writeDebugLog("ArticleController:getFeaturedArticles:AFTER_QUERY", 
-            "Query completed - checking serialization",
-            "A,B,C",
-            String.format("{\"resultCount\":%d,\"hasContent\":%b}", featuredPage.getNumberOfElements(), !featuredPage.getContent().isEmpty()));
-        // #endregion
-        
         return ResponseEntity.ok(featuredPage.getContent());
     }
 
@@ -174,24 +131,9 @@ public class ArticleController {
     @GetMapping("/recent")
     public ResponseEntity<List<Article>> getRecentArticles(
             @RequestParam(defaultValue = "10") int limit) {
-        // #region agent log
-        writeDebugLog("ArticleController:getRecentArticles:ENTRY", 
-            "getRecentArticles called",
-            "A,B,C,D",
-            String.format("{\"limit\":%d}", limit));
-        // #endregion
-        
         int maxLimit = Math.min(limit, 50);
         Pageable pageable = PageRequest.of(0, maxLimit, Sort.by(Sort.Direction.DESC, "publishedAt"));
         Page<Article> recentPage = articleService.findRecentPublished(pageable);
-        
-        // #region agent log
-        writeDebugLog("ArticleController:getRecentArticles:AFTER_QUERY", 
-            "Query completed - checking serialization",
-            "A,B,C",
-            String.format("{\"resultCount\":%d,\"hasContent\":%b}", recentPage.getNumberOfElements(), !recentPage.getContent().isEmpty()));
-        // #endregion
-        
         return ResponseEntity.ok(recentPage.getContent());
     }
 
@@ -206,25 +148,10 @@ public class ArticleController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String sortField,
             @RequestParam(required = false) String sortDirection) {
-        // #region agent log
-        writeDebugLog("ArticleController:getArticlesByCategory:ENTRY", 
-            "getArticlesByCategory called",
-            "A,B,C,D",
-            String.format("{\"categorySlug\":\"%s\",\"page\":%d,\"size\":%d}", categorySlug, page, size));
-        // #endregion
-        
         int pageSize = Math.min(size, 100);
         Sort sort = buildSort(sortField, sortDirection);
         Pageable pageable = PageRequest.of(page, pageSize, sort);
         Page<Article> articlePage = articleService.findPublishedByCategorySlug(categorySlug, pageable);
-        
-        // #region agent log
-        writeDebugLog("ArticleController:getArticlesByCategory:AFTER_QUERY", 
-            "Query completed - checking serialization",
-            "A,B,C",
-            String.format("{\"categorySlug\":\"%s\",\"resultCount\":%d}", categorySlug, articlePage.getNumberOfElements()));
-        // #endregion
-        
         return ResponseEntity.ok(articlePage);
     }
 
@@ -539,17 +466,5 @@ public class ArticleController {
                 throw new IllegalArgumentException("Unknown article status: " + target);
         }
     }
-
-    // #region agent log helpers
-    private void writeDebugLog(String location, String message, String hypothesisId, String dataJson) {
-        try (FileWriter fw = new FileWriter("/home/lirrnaiad/Documents/Cursor/the-pillar/.cursor/debug.log", true)) {
-            String logEntry = String.format("{\"location\":\"%s\",\"message\":\"%s\",\"data\":%s,\"timestamp\":%d,\"sessionId\":\"debug-session\",\"runId\":\"run1\",\"hypothesisId\":\"%s\"}\n",
-                location, message, dataJson, System.currentTimeMillis(), hypothesisId);
-            fw.write(logEntry);
-        } catch (IOException e) {
-            log.warn("Failed to write debug log: {}", e.getMessage());
-        }
-    }
-    // #endregion
 }
 
